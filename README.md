@@ -4,13 +4,6 @@ Course project for COMP3278. The implementation is being delivered one core func
 
 ## Current status
 
-Core function 1 is in progress:
-
-- MySQL schema for users, posts, likes, and comments
-- FastAPI backend scaffold
-- Docker Compose bootstrap for local deployment
-
-Core function 2 target:
-
-- Read-only SQL query endpoint
-- Text-to-SQL demo endpoint for analytics and feed exploration
+- Core function 1 complete: MySQL schema plus backend CRUD APIs
+- Core function 2 complete: read-only SQL query system and Text-to-SQL demo queries
+- Core function 3 in progress: React frontend with Art Deco feed, posting flow, and query dashboard
