@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 from sqlalchemy import select
 
 from app.database import SessionLocal
@@ -19,21 +21,32 @@ def seed() -> None:
         db.add_all(users)
         db.flush()
 
+        now = datetime.now(timezone.utc)
+
         posts = [
             Post(
                 user_id=users[0].id,
                 description="Golden lights over the harbor after class.",
                 image_url="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
+                created_at=now - timedelta(days=3, hours=2),
             ),
             Post(
                 user_id=users[1].id,
                 description="A quiet table, good coffee, and project planning.",
                 image_url="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085",
+                created_at=now - timedelta(days=1, hours=4),
             ),
             Post(
                 user_id=users[2].id,
                 description="Studio textures and geometric shadows.",
                 image_url="https://images.unsplash.com/photo-1517048676732-d65bc937f952",
+                created_at=now - timedelta(hours=5),
+            ),
+            Post(
+                user_id=users[1].id,
+                description="Bronze reflections in the arcade right before midnight.",
+                image_url="https://images.unsplash.com/photo-1521572267360-ee0c2909d518",
+                created_at=now - timedelta(minutes=35),
             ),
         ]
         db.add_all(posts)
@@ -43,8 +56,41 @@ def seed() -> None:
             [
                 Like(user_id=users[1].id, post_id=posts[0].id),
                 Like(user_id=users[2].id, post_id=posts[0].id),
+                Like(user_id=users[0].id, post_id=posts[0].id),
                 Like(user_id=users[0].id, post_id=posts[1].id),
-                Comment(user_id=users[2].id, post_id=posts[0].id, body="The reflections are excellent."),
+                Like(user_id=users[0].id, post_id=posts[2].id),
+                Like(user_id=users[1].id, post_id=posts[2].id),
+                Like(user_id=users[2].id, post_id=posts[3].id),
+                Comment(
+                    user_id=users[2].id,
+                    post_id=posts[0].id,
+                    body="The reflections are excellent.",
+                    created_at=now - timedelta(days=2, hours=20),
+                ),
+                Comment(
+                    user_id=users[1].id,
+                    post_id=posts[0].id,
+                    body="Looks like an old cinema poster.",
+                    created_at=now - timedelta(days=2, hours=18),
+                ),
+                Comment(
+                    user_id=users[0].id,
+                    post_id=posts[1].id,
+                    body="Coffee and database work is a strong combination.",
+                    created_at=now - timedelta(days=1, hours=2),
+                ),
+                Comment(
+                    user_id=users[1].id,
+                    post_id=posts[2].id,
+                    body="These shadows feel very Art Deco.",
+                    created_at=now - timedelta(hours=3),
+                ),
+                Comment(
+                    user_id=users[2].id,
+                    post_id=posts[3].id,
+                    body="This one should sit at the top of recent.",
+                    created_at=now - timedelta(minutes=22),
+                ),
             ]
         )
         db.commit()

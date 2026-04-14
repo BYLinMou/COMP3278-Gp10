@@ -99,19 +99,80 @@ function Composer({ postForm, setPostForm, onSubmit }) {
   );
 }
 
-function PostPreviewComments({ comments }) {
+function PostPreviewComments({ comments, onOpenThread, commentCount }) {
   if (!comments?.length) {
-    return null;
+    return (
+      <button className="inline-thread-link" onClick={onOpenThread}>
+        No comments yet. Open thread
+      </button>
+    );
   }
 
   return (
     <div className="preview-comments">
       {comments.map((comment) => (
-        <div className="preview-comment" key={comment.id}>
+        <button className="preview-comment" key={comment.id} onClick={onOpenThread}>
           <strong>@{comment.username}</strong>
           <span>{comment.body}</span>
-        </div>
+        </button>
       ))}
+      {commentCount > comments.length ? (
+        <button className="inline-thread-link" onClick={onOpenThread}>
+          View all {commentCount} comments
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function ThreadDrawer({ post, comments, commentBody, setCommentBody, onComment, onClose }) {
+  if (!post) {
+    return null;
+  }
+
+  return (
+    <div className="thread-overlay" onClick={onClose}>
+      <aside className="thread-drawer" onClick={(event) => event.stopPropagation()}>
+        <div className="thread-drawer__header">
+          <div>
+            <span className="eyebrow">III. Thread</span>
+            <h2>Open Thread</h2>
+          </div>
+          <button className="deco-button deco-button--ghost" onClick={onClose}>
+            Close
+          </button>
+        </div>
+        <div className="thread-meta">
+          <strong>{post.display_name}</strong>
+          <span>@{post.username}</span>
+          <time>{formatDate(post.created_at)}</time>
+        </div>
+        <div className="frame-image thread-image">
+          <div className="frame-image__inner">
+            <img src={post.image_url} alt={post.description} />
+          </div>
+        </div>
+        <p className="thread-body">{post.description}</p>
+        <div className="feed-card__stats">
+          <span>Likes {post.like_count}</span>
+          <span>Comments {post.comment_count}</span>
+        </div>
+        <form className="stack-form" onSubmit={onComment}>
+          <label>
+            Add Comment
+            <textarea
+              value={commentBody}
+              onChange={(event) => setCommentBody(event.target.value)}
+              placeholder="Write into the thread"
+              required
+            />
+          </label>
+          <button className="deco-button" type="submit">
+            Comment
+          </button>
+        </form>
+        <CommentList comments={comments} />
+      </aside>
     </div>
   );
 }
@@ -137,7 +198,11 @@ function PostCard({ post, active, currentUserId, onLike, onOpen }) {
         </div>
         <div className="feed-card__content">
           <p className="feed-card__body">{post.description}</p>
-          <PostPreviewComments comments={post.recent_comments} />
+          <PostPreviewComments
+            comments={post.recent_comments}
+            commentCount={post.comment_count}
+            onOpenThread={() => onOpen(post)}
+          />
         </div>
       </div>
       <div className="feed-card__stats">
@@ -168,6 +233,7 @@ export default function App() {
   const [registration, setRegistration] = useState(blankRegistration);
   const [postForm, setPostForm] = useState(blankPost);
   const [commentBody, setCommentBody] = useState("");
+  const [isThreadOpen, setIsThreadOpen] = useState(false);
 
   async function refreshUsers() {
     const nextUsers = await getUsers();
@@ -197,7 +263,9 @@ export default function App() {
     const comments = await getPostComments(post.id);
     setSelectedPost(post);
     setSelectedComments(comments);
+    setIsThreadOpen(true);
     await loadProfile(post.username);
+    setStatus(`Opened thread for @${post.username}`);
   }
 
   useEffect(() => {
@@ -217,7 +285,7 @@ export default function App() {
         }
 
         if (initialFeed.length) {
-          await openPost(initialFeed[0]);
+          setSelectedPost(initialFeed[0]);
         }
       } catch (error) {
         setStatus(error.message);
@@ -281,7 +349,7 @@ export default function App() {
       await toggleLike(postId, userId);
       const items = await refreshFeed(sortBy);
       const target = items.find((post) => post.id === postId);
-      if (target) {
+      if (target && isThreadOpen) {
         await openPost(target);
       }
       if (selectedProfile) {
@@ -458,46 +526,16 @@ export default function App() {
               </div>
             </div>
             <p className="muted-copy">
-              Compact post cards show image, caption, likes, comments, and recent replies directly in the feed.
+              Recent should surface the newest post first. Popular should surface the most-liked post first.
             </p>
           </section>
-
-          {selectedPost ? (
-            <section className="app-card thread-card">
-              <div className="card-header">
-                <span className="eyebrow">III. Thread</span>
-                <h2>Post Detail</h2>
-              </div>
-              <div className="thread-meta">
-                <strong>{selectedPost.display_name}</strong>
-                <span>@{selectedPost.username}</span>
-                <time>{formatDate(selectedPost.created_at)}</time>
-              </div>
-              <p className="thread-body">{selectedPost.description}</p>
-              <form className="stack-form" onSubmit={handleComment}>
-                <label>
-                  Add Comment
-                  <textarea
-                    value={commentBody}
-                    onChange={(event) => setCommentBody(event.target.value)}
-                    placeholder="Write into the thread"
-                    required
-                  />
-                </label>
-                <button className="deco-button" type="submit">
-                  Comment
-                </button>
-              </form>
-              <CommentList comments={selectedComments} />
-            </section>
-          ) : null}
 
           <div className="feed-list">
             {feed.map((post) => (
               <PostCard
                 key={post.id}
                 post={post}
-                active={selectedPost?.id === post.id}
+                active={selectedPost?.id === post.id && isThreadOpen}
                 currentUserId={currentUser?.id}
                 onLike={handleLike}
                 onOpen={openPost}
@@ -506,6 +544,15 @@ export default function App() {
           </div>
         </section>
       </main>
+
+      <ThreadDrawer
+        post={isThreadOpen ? selectedPost : null}
+        comments={selectedComments}
+        commentBody={commentBody}
+        setCommentBody={setCommentBody}
+        onComment={handleComment}
+        onClose={() => setIsThreadOpen(false)}
+      />
     </div>
   );
 }
