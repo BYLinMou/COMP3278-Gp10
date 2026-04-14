@@ -55,3 +55,27 @@ class LikeToggleResponse(BaseModel):
     post_id: int
     liked: bool
     like_count: int
+
+
+class SqlQueryRequest(BaseModel):
+    sql: str = Field(min_length=1, max_length=5000)
+    params: dict[str, str | int | float] | None = None
+
+
+class SqlQueryResponse(BaseModel):
+    columns: list[str]
+    row_count: int
+    rows: list[dict]
+
+
+class TextToSqlRequest(BaseModel):
+    prompt: str = Field(min_length=1, max_length=300)
+
+
+class TextToSqlResponse(BaseModel):
+    title: str
+    sql: str
+    params: dict
+    columns: list[str]
+    row_count: int
+    rows: list[dict]

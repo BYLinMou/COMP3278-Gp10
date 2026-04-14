@@ -6,6 +6,12 @@ from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.config import get_settings
 from app.database import Base, engine, get_db
+from app.query_engine import (
+    SCHEMA_CONTEXT,
+    execute_read_only_sql,
+    list_supported_questions,
+    text_to_sql,
+)
 
 settings = get_settings()
 app = FastAPI(title=settings.app_name)
@@ -27,6 +33,14 @@ def startup() -> None:
 @app.get("/health")
 def healthcheck() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/query/schema")
+def get_query_schema() -> dict[str, object]:
+    return {
+        "tables": SCHEMA_CONTEXT,
+        "supported_questions": list_supported_questions(),
+    }
 
 
 @app.post("/users", response_model=schemas.UserRead, status_code=201)
@@ -80,3 +94,28 @@ def create_comment(post_id: int, payload: schemas.CommentCreate, db: Session = D
 @app.get("/users/{username}/posts", response_model=list[schemas.PostRead])
 def get_user_posts(username: str, db: Session = Depends(get_db)):
     return crud.list_user_posts(db, username)
+
+
+@app.post("/query/sql", response_model=schemas.SqlQueryResponse)
+def run_sql_query(payload: schemas.SqlQueryRequest, db: Session = Depends(get_db)):
+    try:
+        return execute_read_only_sql(db, payload.sql, payload.params)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/query/text-to-sql", response_model=schemas.TextToSqlResponse)
+def run_text_to_sql_query(payload: schemas.TextToSqlRequest, db: Session = Depends(get_db)):
+    try:
+        generated = text_to_sql(payload.prompt)
+        result = execute_read_only_sql(db, generated.sql, generated.params)
+        return schemas.TextToSqlResponse(
+            title=generated.title,
+            sql=" ".join(generated.sql.split()),
+            params=generated.params,
+            columns=result["columns"],
+            row_count=result["row_count"],
+            rows=result["rows"],
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
