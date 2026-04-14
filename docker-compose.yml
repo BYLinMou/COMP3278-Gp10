@@ -1,0 +1,29 @@
+services:
+  db:
+    image: mysql:8.4
+    container_name: hkugram-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: hkugram
+      MYSQL_USER: hkugram
+      MYSQL_PASSWORD: hkugram
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  backend:
+    build:
+      context: ./backend
+    container_name: hkugram-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env.example
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+volumes:
+  mysql_data:
