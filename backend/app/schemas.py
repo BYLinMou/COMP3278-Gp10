@@ -34,6 +34,7 @@ class PostRead(BaseModel):
     comment_count: int
     username: str
     display_name: str
+    recent_comments: list["CommentRead"] = []
 
 
 class CommentCreate(BaseModel):

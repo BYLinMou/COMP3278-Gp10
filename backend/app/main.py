@@ -1,5 +1,9 @@
-from fastapi import Depends, FastAPI, HTTPException, Query
+from pathlib import Path
+from uuid import uuid4
+
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -15,6 +19,8 @@ from app.query_engine import (
 
 settings = get_settings()
 app = FastAPI(title=settings.app_name)
+uploads_dir = Path(__file__).resolve().parents[1] / "uploads"
+uploads_dir.mkdir(parents=True, exist_ok=True)
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,6 +34,9 @@ app.add_middleware(
 @app.on_event("startup")
 def startup() -> None:
     Base.metadata.create_all(bind=engine)
+
+
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 
 @app.get("/health")
@@ -80,6 +89,37 @@ def create_post(payload: schemas.PostCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
     post = crud.create_post(db, payload)
     return {"id": post.id}
+
+
+@app.post("/posts/upload", status_code=201)
+async def create_uploaded_post(
+    user_id: int = Form(...),
+    description: str = Form(...),
+    image: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    user = db.get(models.User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not image.content_type or not image.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Uploaded file must be an image")
+
+    suffix = Path(image.filename or "upload").suffix or ".jpg"
+    filename = f"{uuid4().hex}{suffix}"
+    file_path = uploads_dir / filename
+    content = await image.read()
+    file_path.write_bytes(content)
+
+    post = crud.create_post(
+        db,
+        schemas.PostCreate(
+            user_id=user_id,
+            description=description,
+            image_url=f"http://127.0.0.1:8000/uploads/{filename}",
+        ),
+    )
+    return {"id": post.id, "image_url": post.image_url}
 
 
 @app.post("/posts/{post_id}/like", response_model=schemas.LikeToggleResponse)

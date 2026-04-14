@@ -159,7 +159,7 @@ button {
 }
 
 .card-header h2 {
-  font-size: 1.5rem;
+  font-size: 1.35rem;
 }
 
 .stack-form {
@@ -262,12 +262,14 @@ textarea:focus {
 
 .feed-list {
   display: grid;
-  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
 }
 
 .feed-card {
   display: grid;
-  gap: 1rem;
+  gap: 0.75rem;
+  padding: 0.95rem;
 }
 
 .feed-card--active {
@@ -278,7 +280,7 @@ textarea:focus {
 .feed-card__head {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: center;
 }
 
@@ -294,8 +296,8 @@ textarea:focus {
 }
 
 .diamond-badge {
-  width: 52px;
-  height: 52px;
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
   border: 1px solid var(--gold);
@@ -314,6 +316,11 @@ textarea:focus {
   border: 1px solid var(--gold);
 }
 
+.frame-image--compact {
+  width: 132px;
+  flex: 0 0 132px;
+}
+
 .frame-image__inner {
   padding: 8px;
   background: #0d0d0d;
@@ -324,8 +331,20 @@ textarea:focus {
   width: 100%;
   display: block;
   object-fit: cover;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1 / 1;
   filter: grayscale(0.15);
+}
+
+.feed-card__mediaRow {
+  display: flex;
+  gap: 0.8rem;
+  align-items: start;
+}
+
+.feed-card__content {
+  min-width: 0;
+  display: grid;
+  gap: 0.65rem;
 }
 
 .feed-card__body,
@@ -333,6 +352,10 @@ textarea:focus {
 .comment-item p {
   margin: 0;
   line-height: 1.65;
+}
+
+.feed-card__body {
+  font-size: 0.96rem;
 }
 
 .feed-card__stats,
@@ -354,6 +377,26 @@ textarea:focus {
   position: sticky;
   top: 6.2rem;
   z-index: 1;
+}
+
+.preview-comments {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.preview-comment {
+  display: grid;
+  gap: 0.15rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(212, 175, 55, 0.12);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.preview-comment strong {
+  color: var(--gold);
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
 }
 
 .profile-head {
@@ -423,6 +466,10 @@ textarea:focus {
   .topbar-status {
     text-align: left;
   }
+
+  .feed-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
@@ -442,5 +489,13 @@ textarea:focus {
 
   .feed-card__head time {
     grid-column: 1 / -1;
+  }
+
+  .feed-card__mediaRow {
+    display: grid;
+  }
+
+  .frame-image--compact {
+    width: 100%;
   }
 }

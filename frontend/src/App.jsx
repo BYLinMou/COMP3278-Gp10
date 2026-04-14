@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   createComment,
-  createPost,
+  createUploadedPost,
   createUser,
   getFeed,
   getPostComments,
@@ -18,7 +18,7 @@ const blankRegistration = {
 
 const blankPost = {
   description: "",
-  image_url: "",
+  imageFile: null,
 };
 
 function formatDate(value) {
@@ -77,21 +77,42 @@ function Composer({ postForm, setPostForm, onSubmit }) {
           />
         </label>
         <label>
-          Image URL
+          Upload Image
           <input
-            value={postForm.image_url}
+            type="file"
+            accept="image/*"
             onChange={(event) =>
-              setPostForm((current) => ({ ...current, image_url: event.target.value }))
+              setPostForm((current) => ({
+                ...current,
+                imageFile: event.target.files?.[0] ?? null,
+              }))
             }
-            placeholder="https://..."
             required
           />
         </label>
+        {postForm.imageFile ? <p className="muted-copy">Selected: {postForm.imageFile.name}</p> : null}
         <button className="deco-button" type="submit">
           Publish
         </button>
       </form>
     </section>
+  );
+}
+
+function PostPreviewComments({ comments }) {
+  if (!comments?.length) {
+    return null;
+  }
+
+  return (
+    <div className="preview-comments">
+      {comments.map((comment) => (
+        <div className="preview-comment" key={comment.id}>
+          <strong>@{comment.username}</strong>
+          <span>{comment.body}</span>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -108,12 +129,17 @@ function PostCard({ post, active, currentUserId, onLike, onOpen }) {
         </div>
         <time>{formatDate(post.created_at)}</time>
       </div>
-      <div className="frame-image">
-        <div className="frame-image__inner">
-          <img src={post.image_url} alt={post.description} />
+      <div className="feed-card__mediaRow">
+        <div className="frame-image frame-image--compact">
+          <div className="frame-image__inner">
+            <img src={post.image_url} alt={post.description} />
+          </div>
+        </div>
+        <div className="feed-card__content">
+          <p className="feed-card__body">{post.description}</p>
+          <PostPreviewComments comments={post.recent_comments} />
         </div>
       </div>
-      <p className="feed-card__body">{post.description}</p>
       <div className="feed-card__stats">
         <span>Likes {post.like_count}</span>
         <span>Comments {post.comment_count}</span>
@@ -221,12 +247,16 @@ export default function App() {
       setStatus("Log in before posting.");
       return;
     }
+    if (!postForm.imageFile) {
+      setStatus("Select an image before publishing.");
+      return;
+    }
 
     try {
-      await createPost({
-        user_id: currentUser.id,
+      await createUploadedPost({
+        userId: currentUser.id,
         description: postForm.description,
-        image_url: postForm.image_url,
+        imageFile: postForm.imageFile,
       });
       setPostForm(blankPost);
       const items = await refreshFeed(sortBy);
@@ -428,7 +458,7 @@ export default function App() {
               </div>
             </div>
             <p className="muted-copy">
-              Every post shows username, caption, image, timestamp, like count, and comment count.
+              Compact post cards show image, caption, likes, comments, and recent replies directly in the feed.
             </p>
           </section>
 

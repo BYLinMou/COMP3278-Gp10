@@ -56,7 +56,38 @@ def list_feed(db: Session, sort_by: str = "recent") -> list[schemas.PostRead]:
         query = query.order_by(desc(models.Post.created_at))
 
     rows = db.execute(query).all()
-    return [schemas.PostRead.model_validate(row._mapping) for row in rows]
+    posts = [schemas.PostRead.model_validate({**row._mapping, "recent_comments": []}) for row in rows]
+
+    if not posts:
+        return posts
+
+    post_ids = [post.id for post in posts]
+    comment_rows = db.execute(
+        select(
+            models.Comment.id,
+            models.Comment.body,
+            models.Comment.created_at,
+            models.Comment.user_id,
+            models.Comment.post_id,
+            models.User.username,
+            models.User.display_name,
+        )
+        .join(models.User, models.User.id == models.Comment.user_id)
+        .where(models.Comment.post_id.in_(post_ids))
+        .order_by(models.Comment.created_at.desc())
+    ).all()
+
+    grouped: dict[int, list[schemas.CommentRead]] = {}
+    for row in comment_rows:
+        preview = schemas.CommentRead.model_validate(row._mapping)
+        grouped.setdefault(preview.post_id, [])
+        if len(grouped[preview.post_id]) < 2:
+            grouped[preview.post_id].append(preview)
+
+    for post in posts:
+        post.recent_comments = list(reversed(grouped.get(post.id, [])))
+
+    return posts
 
 
 def toggle_like(db: Session, post_id: int, user_id: int) -> schemas.LikeToggleResponse:

@@ -43,6 +43,25 @@ export function createPost(payload) {
   });
 }
 
+export async function createUploadedPost({ userId, description, imageFile }) {
+  const form = new FormData();
+  form.append("user_id", String(userId));
+  form.append("description", description);
+  form.append("image", imageFile);
+
+  const response = await fetch(`${API_BASE}/posts/upload`, {
+    method: "POST",
+    body: form,
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail ?? "Upload failed");
+  }
+
+  return response.json();
+}
+
 export function toggleLike(postId, userId) {
   return request(`/posts/${postId}/like?user_id=${userId}`, {
     method: "POST",
