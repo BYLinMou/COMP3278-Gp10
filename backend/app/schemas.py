@@ -13,6 +13,11 @@ class UserLogin(BaseModel):
     username: str = Field(min_length=3, max_length=50)
 
 
+class UserUpdate(BaseModel):
+    display_name: str = Field(min_length=1, max_length=100)
+    bio: str | None = Field(default=None, max_length=255)
+
+
 class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

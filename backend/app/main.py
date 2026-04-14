@@ -82,6 +82,14 @@ def get_user_profile(username: str, db: Session = Depends(get_db)):
     return profile
 
 
+@app.put("/users/{username}", response_model=schemas.UserRead)
+def update_user(username: str, payload: schemas.UserUpdate, db: Session = Depends(get_db)):
+    user = crud.update_user(db, username, payload)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
 @app.get("/feed", response_model=list[schemas.PostRead])
 def get_feed(
     sort_by: str = Query(default="recent", pattern="^(recent|popular)$"),

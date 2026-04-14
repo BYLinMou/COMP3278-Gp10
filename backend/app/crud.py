@@ -29,6 +29,17 @@ def get_user_by_username(db: Session, username: str) -> models.User | None:
     return db.scalar(select(models.User).where(models.User.username == username))
 
 
+def update_user(db: Session, username: str, payload: schemas.UserUpdate) -> models.User | None:
+    user = get_user_by_username(db, username)
+    if not user:
+        return None
+    user.display_name = payload.display_name
+    user.bio = payload.bio
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 def list_feed(db: Session, sort_by: str = "recent") -> list[schemas.PostRead]:
     like_count = func.count(func.distinct(models.Like.id)).label("like_count")
     comment_count = func.count(func.distinct(models.Comment.id)).label("comment_count")

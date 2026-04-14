@@ -9,9 +9,11 @@ import {
   getUsers,
   loginUser,
   toggleLike,
+  updateUser,
 } from "./api";
 
 const SESSION_KEY = "hkugram_username";
+const HISTORY_KEY = "hkugram_browsing_history";
 
 const blankRegistration = {
   username: "",
@@ -26,6 +28,11 @@ const blankLogin = {
 const blankPost = {
   description: "",
   imageFile: null,
+};
+
+const blankSettings = {
+  display_name: "",
+  bio: "",
 };
 
 const NAV_ITEMS = [
@@ -293,10 +300,17 @@ export default function App() {
   const [status, setStatus] = useState("Loading HKUgram...");
   const [registration, setRegistration] = useState(blankRegistration);
   const [loginForm, setLoginForm] = useState(blankLogin);
+  const [settingsForm, setSettingsForm] = useState(blankSettings);
   const [postForm, setPostForm] = useState(blankPost);
   const [commentBody, setCommentBody] = useState("");
   const [isThreadOpen, setIsThreadOpen] = useState(false);
   const [currentView, setCurrentView] = useState("home");
+  const [browsingHistory, setBrowsingHistory] = useState([]);
+
+  function persistBrowsingHistory(nextHistory) {
+    setBrowsingHistory(nextHistory);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(nextHistory));
+  }
 
   async function refreshUsers() {
     const nextUsers = await getUsers();
@@ -325,6 +339,10 @@ export default function App() {
   async function setLoggedInUser(user) {
     setCurrentUser(user);
     setLoginForm({ username: user.username });
+    setSettingsForm({
+      display_name: user.display_name,
+      bio: user.bio ?? "",
+    });
     localStorage.setItem(SESSION_KEY, user.username);
     await loadProfile(user.username);
   }
@@ -343,6 +361,15 @@ export default function App() {
     setIsThreadOpen(true);
     await loadProfile(post.username);
     setStatus(`Opened thread for @${post.username}`);
+
+    const nextRecord = {
+      id: post.id,
+      username: post.username,
+      description: post.description,
+      viewed_at: new Date().toISOString(),
+    };
+    const deduped = browsingHistory.filter((entry) => entry.id !== post.id);
+    persistBrowsingHistory([nextRecord, ...deduped].slice(0, 12));
   }
 
   useEffect(() => {
@@ -352,6 +379,15 @@ export default function App() {
           refreshUsers(),
           refreshFeed("recent"),
         ]);
+
+        const savedHistory = localStorage.getItem(HISTORY_KEY);
+        if (savedHistory) {
+          try {
+            setBrowsingHistory(JSON.parse(savedHistory));
+          } catch {
+            localStorage.removeItem(HISTORY_KEY);
+          }
+        }
 
         const savedUsername = localStorage.getItem(SESSION_KEY);
         if (savedUsername) {
@@ -402,6 +438,23 @@ export default function App() {
       setRegistration(blankRegistration);
       setCurrentView("home");
       setStatus(`Account created for @${user.username}`);
+    } catch (error) {
+      setStatus(error.message);
+    }
+  }
+
+  async function handleUpdateProfile(event) {
+    event.preventDefault();
+    if (!currentUser) {
+      setStatus("Log in before updating settings.");
+      return;
+    }
+
+    try {
+      const updated = await updateUser(currentUser.username, settingsForm);
+      await setLoggedInUser(updated);
+      await refreshUsers();
+      setStatus("Profile updated.");
     } catch (error) {
       setStatus(error.message);
     }
@@ -587,17 +640,31 @@ export default function App() {
                   <span className="eyebrow">History</span>
                   <h2>Browsing Record</h2>
                 </div>
-                {selectedProfile ? (
+                {browsingHistory.length ? (
                   <div className="history-list">
-                    {selectedProfile.recent_posts.map((post) => (
-                      <button key={post.id} className="history-item" onClick={() => openPost(post)}>
-                        <strong>{formatDate(post.created_at)}</strong>
-                        <span>{post.description}</span>
-                      </button>
+                    {browsingHistory.map((entry) => (
+                      <article key={`${entry.id}-${entry.viewed_at}`} className="history-record">
+                        <strong>@{entry.username}</strong>
+                        <span>{entry.description}</span>
+                        <time>{formatDate(entry.viewed_at)}</time>
+                        <button
+                          className="inline-thread-link"
+                          onClick={() => {
+                            const post = feed.find((item) => item.id === entry.id);
+                            if (post) {
+                              openPost(post);
+                            } else {
+                              setCurrentView("home");
+                            }
+                          }}
+                        >
+                          Open Again
+                        </button>
+                      </article>
                     ))}
                   </div>
                 ) : (
-                  <p className="muted-copy">Open a post first, then the author history appears here.</p>
+                  <p className="muted-copy">Open posts from the feed and they will appear here.</p>
                 )}
               </section>
             </section>
@@ -631,6 +698,40 @@ export default function App() {
                     Log Out
                   </button>
                 ) : null}
+              </section>
+
+              <section className="app-card">
+                <div className="card-header">
+                  <span className="eyebrow">Profile</span>
+                  <h2>Edit Current User</h2>
+                </div>
+                <form className="stack-form" onSubmit={handleUpdateProfile}>
+                  <label>
+                    Display Name
+                    <input
+                      value={settingsForm.display_name}
+                      onChange={(event) =>
+                        setSettingsForm((current) => ({ ...current, display_name: event.target.value }))
+                      }
+                      required
+                      disabled={!currentUser}
+                    />
+                  </label>
+                  <label>
+                    Bio
+                    <textarea
+                      value={settingsForm.bio}
+                      onChange={(event) =>
+                        setSettingsForm((current) => ({ ...current, bio: event.target.value }))
+                      }
+                      disabled={!currentUser}
+                    />
+                  </label>
+                  <button className="deco-button" type="submit" disabled={!currentUser}>
+                    Save Profile
+                  </button>
+                </form>
+                {!currentUser ? <p className="muted-copy">Log in to edit your profile.</p> : null}
               </section>
             </section>
 

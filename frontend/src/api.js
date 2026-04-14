@@ -43,6 +43,13 @@ export function getUserProfile(username) {
   return request(`/users/${username}`);
 }
 
+export function updateUser(username, payload) {
+  return request(`/users/${username}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function createPost(payload) {
   return request("/posts", {
     method: "POST",
