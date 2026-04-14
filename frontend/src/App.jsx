@@ -28,6 +28,13 @@ const blankPost = {
   imageFile: null,
 };
 
+const NAV_ITEMS = [
+  { id: "home", label: "Home" },
+  { id: "create", label: "Create" },
+  { id: "history", label: "History" },
+  { id: "settings", label: "Settings" },
+];
+
 function formatDate(value) {
   return new Intl.DateTimeFormat("en-HK", {
     dateStyle: "medium",
@@ -68,7 +75,7 @@ function Composer({ disabled, postForm, setPostForm, onSubmit }) {
   return (
     <section className="app-card">
       <div className="card-header">
-        <span className="eyebrow">II. Compose</span>
+        <span className="eyebrow">Create</span>
         <h2>New Post</h2>
       </div>
       <form className="stack-form" onSubmit={onSubmit}>
@@ -153,7 +160,7 @@ function ThreadDrawer({
       <aside className="thread-drawer" onClick={(event) => event.stopPropagation()}>
         <div className="thread-drawer__header">
           <div>
-            <span className="eyebrow">IV. Thread</span>
+            <span className="eyebrow">Thread</span>
             <h2>Open Thread</h2>
           </div>
           <button className="deco-button deco-button--ghost" onClick={onClose}>
@@ -245,6 +252,36 @@ function PostCard({ post, active, currentUserId, onLike, onOpen }) {
   );
 }
 
+function TopNav({ currentView, onChange, currentUser, onLogout }) {
+  return (
+    <header className="app-topbar app-topbar--nav">
+      <div className="brand-block">
+        <p className="eyebrow">HKUgram</p>
+        <h1>Social Salon</h1>
+      </div>
+      <nav className="top-nav">
+        {NAV_ITEMS.map((item) => (
+          <button
+            key={item.id}
+            className={`nav-pill ${currentView === item.id ? "nav-pill--active" : ""}`}
+            onClick={() => onChange(item.id)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </nav>
+      <div className="topbar-user">
+        <span>{currentUser ? `@${currentUser.username}` : "Guest"}</span>
+        {currentUser ? (
+          <button className="deco-button deco-button--ghost" onClick={onLogout}>
+            Log Out
+          </button>
+        ) : null}
+      </div>
+    </header>
+  );
+}
+
 export default function App() {
   const [feed, setFeed] = useState([]);
   const [users, setUsers] = useState([]);
@@ -259,6 +296,7 @@ export default function App() {
   const [postForm, setPostForm] = useState(blankPost);
   const [commentBody, setCommentBody] = useState("");
   const [isThreadOpen, setIsThreadOpen] = useState(false);
+  const [currentView, setCurrentView] = useState("home");
 
   async function refreshUsers() {
     const nextUsers = await getUsers();
@@ -294,6 +332,7 @@ export default function App() {
   function logout() {
     setCurrentUser(null);
     localStorage.removeItem(SESSION_KEY);
+    setCurrentView("home");
     setStatus("Logged out.");
   }
 
@@ -347,6 +386,7 @@ export default function App() {
     try {
       const user = await loginUser(loginForm.username);
       await setLoggedInUser(user);
+      setCurrentView("home");
       setStatus(`Logged in as @${user.username}`);
     } catch (error) {
       setStatus(error.message);
@@ -360,6 +400,7 @@ export default function App() {
       await refreshUsers();
       await setLoggedInUser(user);
       setRegistration(blankRegistration);
+      setCurrentView("home");
       setStatus(`Account created for @${user.username}`);
     } catch (error) {
       setStatus(error.message);
@@ -387,6 +428,7 @@ export default function App() {
       const items = await refreshFeed(sortBy);
       await refreshUsers();
       await loadProfile(currentUser.username);
+      setCurrentView("home");
       if (items.length) {
         await openPost(items[0]);
       }
@@ -442,191 +484,217 @@ export default function App() {
   return (
     <div className="social-app-shell">
       <div className="background-pattern" aria-hidden="true" />
-      <header className="app-topbar">
-        <div>
-          <p className="eyebrow">HKUgram</p>
-          <h1>Social Salon</h1>
-        </div>
-        <div className="topbar-status">
-          <span>{currentUser ? `Logged in as @${currentUser.username}` : "No active session"}</span>
-          <span>{status}</span>
-        </div>
-      </header>
+      <TopNav currentView={currentView} onChange={setCurrentView} currentUser={currentUser} onLogout={logout} />
 
-      <main className="social-layout social-layout--two-column">
-        <aside className="left-rail">
-          <section className="app-card">
-            <div className="card-header">
-              <span className="eyebrow">I. Session</span>
-              <h2>Login</h2>
-            </div>
-            <form className="stack-form" onSubmit={handleLogin}>
-              <label>
-                Username
-                <input
-                  value={loginForm.username}
-                  onChange={(event) => setLoginForm({ username: event.target.value })}
-                  placeholder="enter your username"
-                  required
-                />
-              </label>
-              <button className="deco-button" type="submit">
-                Log In
-              </button>
-            </form>
-            {currentUser ? (
-              <button className="deco-button deco-button--ghost" onClick={logout}>
-                Log Out
-              </button>
-            ) : null}
-            <div className="user-switcher">
-              <p className="eyebrow eyebrow--small">Existing Accounts</p>
-              <div className="user-switcher__list">
-                {users.map((user) => (
-                  <button
-                    key={user.id}
-                    className="user-pill"
-                    onClick={() => setLoginForm({ username: user.username })}
-                  >
-                    @{user.username}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section className="app-card">
-            <div className="card-header">
-              <span className="eyebrow">II. Register</span>
-              <h2>Create Account</h2>
-            </div>
-            <form className="stack-form" onSubmit={handleRegister}>
-              <label>
-                Username
-                <input
-                  value={registration.username}
-                  onChange={(event) =>
-                    setRegistration((current) => ({ ...current, username: event.target.value }))
-                  }
-                  placeholder="unique username"
-                  required
-                />
-              </label>
-              <label>
-                Display Name
-                <input
-                  value={registration.display_name}
-                  onChange={(event) =>
-                    setRegistration((current) => ({ ...current, display_name: event.target.value }))
-                  }
-                  placeholder="how others see you"
-                  required
-                />
-              </label>
-              <label>
-                Bio
-                <input
-                  value={registration.bio}
-                  onChange={(event) =>
-                    setRegistration((current) => ({ ...current, bio: event.target.value }))
-                  }
-                  placeholder="short introduction"
-                />
-              </label>
-              <button className="deco-button" type="submit">
-                Create Account
-              </button>
-            </form>
-          </section>
-
-          <Composer
-            disabled={!currentUser}
-            postForm={postForm}
-            setPostForm={setPostForm}
-            onSubmit={handleCreatePost}
-          />
-
-          <section className="app-card">
-            <div className="card-header">
-              <span className="eyebrow">V. Profile</span>
-              <h2>User History</h2>
-            </div>
-            {selectedProfile ? (
-              <>
-                <div className="profile-head">
-                  <DiamondBadge text={selectedProfile.user.username.slice(0, 2).toUpperCase()} />
+      <main className="page-stage">
+        {currentView === "home" ? (
+          <section className="page-grid">
+            <section className="page-main">
+              <section className="app-card feed-header-card">
+                <div className="card-header card-header--row">
                   <div>
-                    <h3>{selectedProfile.user.display_name}</h3>
-                    <p>@{selectedProfile.user.username}</p>
-                    <p className="muted-copy">{selectedProfile.user.bio || "No bio yet."}</p>
+                    <span className="eyebrow">Home</span>
+                    <h2>Public Timeline</h2>
+                  </div>
+                  <div className="feed-toolbar">
+                    <button
+                      className={`deco-button ${sortBy === "recent" ? "" : "deco-button--ghost"}`}
+                      onClick={async () => {
+                        setSortBy("recent");
+                        await refreshFeed("recent");
+                      }}
+                    >
+                      Recent
+                    </button>
+                    <button
+                      className={`deco-button ${sortBy === "popular" ? "" : "deco-button--ghost"}`}
+                      onClick={async () => {
+                        setSortBy("popular");
+                        await refreshFeed("popular");
+                      }}
+                    >
+                      Popular
+                    </button>
                   </div>
                 </div>
-                <div className="profile-stats">
-                  <span>Posts {selectedProfile.stats.post_count}</span>
-                  <span>Likes {selectedProfile.stats.total_likes_received}</span>
-                  <span>Comments {selectedProfile.stats.total_comments_received}</span>
-                </div>
-                <div className="history-list">
-                  {selectedProfile.recent_posts.map((post) => (
-                    <button key={post.id} className="history-item" onClick={() => openPost(post)}>
-                      <strong>{formatDate(post.created_at)}</strong>
-                      <span>{post.description}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p className="muted-copy">Pick a user or post to inspect profile history.</p>
-            )}
-          </section>
-        </aside>
+                <p className="muted-copy">
+                  Recent surfaces the newest post first. Popular surfaces the most-liked post first.
+                </p>
+              </section>
 
-        <section className="feed-column">
-          <section className="app-card feed-header-card">
-            <div className="card-header card-header--row">
-              <div>
-                <span className="eyebrow">III. Feed</span>
-                <h2>Public Timeline</h2>
+              <div className="feed-list">
+                {feed.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    active={selectedPost?.id === post.id && isThreadOpen}
+                    currentUserId={currentUser?.id}
+                    onLike={handleLike}
+                    onOpen={openPost}
+                  />
+                ))}
               </div>
-              <div className="feed-toolbar">
-                <button
-                  className={`deco-button ${sortBy === "recent" ? "" : "deco-button--ghost"}`}
-                  onClick={async () => {
-                    setSortBy("recent");
-                    await refreshFeed("recent");
-                  }}
-                >
-                  Recent
-                </button>
-                <button
-                  className={`deco-button ${sortBy === "popular" ? "" : "deco-button--ghost"}`}
-                  onClick={async () => {
-                    setSortBy("popular");
-                    await refreshFeed("popular");
-                  }}
-                >
-                  Popular
-                </button>
-              </div>
-            </div>
-            <p className="muted-copy">
-              Recent should surface the newest post first. Popular should surface the most-liked post first.
-            </p>
-          </section>
+            </section>
 
-          <div className="feed-list">
-            {feed.map((post) => (
-              <PostCard
-                key={post.id}
-                post={post}
-                active={selectedPost?.id === post.id && isThreadOpen}
-                currentUserId={currentUser?.id}
-                onLike={handleLike}
-                onOpen={openPost}
+            <aside className="page-side">
+              <section className="app-card">
+                <div className="card-header">
+                  <span className="eyebrow">Profile</span>
+                  <h2>Overview</h2>
+                </div>
+                {selectedProfile ? (
+                  <>
+                    <div className="profile-head">
+                      <DiamondBadge text={selectedProfile.user.username.slice(0, 2).toUpperCase()} />
+                      <div>
+                        <h3>{selectedProfile.user.display_name}</h3>
+                        <p>@{selectedProfile.user.username}</p>
+                        <p className="muted-copy">{selectedProfile.user.bio || "No bio yet."}</p>
+                      </div>
+                    </div>
+                    <div className="profile-stats">
+                      <span>Posts {selectedProfile.stats.post_count}</span>
+                      <span>Likes {selectedProfile.stats.total_likes_received}</span>
+                      <span>Comments {selectedProfile.stats.total_comments_received}</span>
+                    </div>
+                  </>
+                ) : (
+                  <p className="muted-copy">Open a post to inspect the author profile.</p>
+                )}
+              </section>
+            </aside>
+          </section>
+        ) : null}
+
+        {currentView === "create" ? (
+          <section className="page-grid page-grid--narrow">
+            <section className="page-main">
+              <Composer
+                disabled={!currentUser}
+                postForm={postForm}
+                setPostForm={setPostForm}
+                onSubmit={handleCreatePost}
               />
-            ))}
-          </div>
-        </section>
+            </section>
+          </section>
+        ) : null}
+
+        {currentView === "history" ? (
+          <section className="page-grid page-grid--narrow">
+            <section className="page-main">
+              <section className="app-card">
+                <div className="card-header">
+                  <span className="eyebrow">History</span>
+                  <h2>Browsing Record</h2>
+                </div>
+                {selectedProfile ? (
+                  <div className="history-list">
+                    {selectedProfile.recent_posts.map((post) => (
+                      <button key={post.id} className="history-item" onClick={() => openPost(post)}>
+                        <strong>{formatDate(post.created_at)}</strong>
+                        <span>{post.description}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="muted-copy">Open a post first, then the author history appears here.</p>
+                )}
+              </section>
+            </section>
+          </section>
+        ) : null}
+
+        {currentView === "settings" ? (
+          <section className="page-grid">
+            <section className="page-main">
+              <section className="app-card">
+                <div className="card-header">
+                  <span className="eyebrow">Settings</span>
+                  <h2>Session Controls</h2>
+                </div>
+                <form className="stack-form" onSubmit={handleLogin}>
+                  <label>
+                    Username
+                    <input
+                      value={loginForm.username}
+                      onChange={(event) => setLoginForm({ username: event.target.value })}
+                      placeholder="enter your username"
+                      required
+                    />
+                  </label>
+                  <button className="deco-button" type="submit">
+                    Log In
+                  </button>
+                </form>
+                {currentUser ? (
+                  <button className="deco-button deco-button--ghost" onClick={logout}>
+                    Log Out
+                  </button>
+                ) : null}
+              </section>
+            </section>
+
+            <aside className="page-side">
+              <section className="app-card">
+                <div className="card-header">
+                  <span className="eyebrow">Register</span>
+                  <h2>Create Account</h2>
+                </div>
+                <form className="stack-form" onSubmit={handleRegister}>
+                  <label>
+                    Username
+                    <input
+                      value={registration.username}
+                      onChange={(event) =>
+                        setRegistration((current) => ({ ...current, username: event.target.value }))
+                      }
+                      placeholder="unique username"
+                      required
+                    />
+                  </label>
+                  <label>
+                    Display Name
+                    <input
+                      value={registration.display_name}
+                      onChange={(event) =>
+                        setRegistration((current) => ({ ...current, display_name: event.target.value }))
+                      }
+                      placeholder="how others see you"
+                      required
+                    />
+                  </label>
+                  <label>
+                    Bio
+                    <input
+                      value={registration.bio}
+                      onChange={(event) =>
+                        setRegistration((current) => ({ ...current, bio: event.target.value }))
+                      }
+                      placeholder="short introduction"
+                    />
+                  </label>
+                  <button className="deco-button" type="submit">
+                    Create Account
+                  </button>
+                </form>
+                <div className="user-switcher">
+                  <p className="eyebrow eyebrow--small">Existing Accounts</p>
+                  <div className="user-switcher__list">
+                    {users.map((user) => (
+                      <button
+                        key={user.id}
+                        className="user-pill"
+                        onClick={() => setLoginForm({ username: user.username })}
+                      >
+                        @{user.username}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            </aside>
+          </section>
+        ) : null}
       </main>
 
       <ThreadDrawer
