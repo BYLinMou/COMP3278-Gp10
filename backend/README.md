@@ -10,6 +10,10 @@ This service provides the first core function for the COMP3278 project: a MySQL-
 4. Start the API with `uvicorn app.main:app --reload` from the `backend` directory.
 5. Seed sample data with `python scripts/seed.py`.
 
+## Docker bootstrap
+
+The backend container runs `python scripts/bootstrap.py` before starting Uvicorn. That bootstrap step waits for MySQL, creates tables, and seeds demo data once.
+
 ## Endpoints
 
 - `GET /health`
