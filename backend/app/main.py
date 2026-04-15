@@ -187,6 +187,14 @@ def create_post(payload: schemas.PostCreate, db: Session = Depends(get_db)):
     return {"id": post.id}
 
 
+@app.get("/posts/{post_id}", response_model=schemas.PostRead)
+def get_post(post_id: int, db: Session = Depends(get_db)):
+    post = crud.get_post_detail(db, post_id)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return post
+
+
 @app.post("/posts/upload", status_code=201)
 async def create_uploaded_post(
     user_id: int = Form(...),

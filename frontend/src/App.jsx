@@ -6,6 +6,7 @@ import {
   getAnalyticsOverview,
   getCurrentSession,
   getFeed,
+  getPost,
   getPostComments,
   getUserHistory,
   getUserProfile,
@@ -400,6 +401,16 @@ export default function App() {
     }
   }
 
+  async function openHistoryPost(postId) {
+    try {
+      const post = await getPost(postId);
+      await openPost(post);
+      setStatus("Opened post from history.");
+    } catch (error) {
+      setStatus(error.message);
+    }
+  }
+
   useEffect(() => {
     async function bootstrap() {
       try {
@@ -665,7 +676,7 @@ export default function App() {
                     <article key={`${entry.post_id}-${entry.viewed_at}`} className="history-record history-record--with-thumb">
                       <img src={entry.image_url} alt={entry.description} />
                       <div><strong>@{entry.username}</strong><span>{entry.description}</span><time>{formatDate(entry.viewed_at)}</time></div>
-                      <button className="ghost-text-button" onClick={() => goUserPage(entry.username)} type="button">View Author</button>
+                      <button className="ghost-text-button" onClick={() => openHistoryPost(entry.post_id)} type="button">View Post</button>
                     </article>
                   ))}
                 </div>

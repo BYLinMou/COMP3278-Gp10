@@ -124,6 +124,10 @@ export function getPostComments(postId) {
   return request(`/posts/${postId}/comments`);
 }
 
+export function getPost(postId) {
+  return request(`/posts/${postId}`);
+}
+
 export async function recordPostView(postId, userId) {
   const response = await fetch(`${API_BASE}/posts/${postId}/views?user_id=${userId}`, {
     method: "POST",

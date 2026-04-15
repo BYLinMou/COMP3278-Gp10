@@ -180,6 +180,13 @@ def list_user_posts(db: Session, username: str) -> list[schemas.PostRead]:
     ]
 
 
+def get_post_detail(db: Session, post_id: int) -> schemas.PostRead | None:
+    for post in list_feed(db, sort_by="recent"):
+        if post.id == post_id:
+            return post
+    return None
+
+
 def get_user_profile(db: Session, username: str) -> schemas.UserProfileResponse | None:
     user = get_user_by_username(db, username)
     if not user:
