@@ -69,13 +69,22 @@ async def create_uploaded_post(
 
 
 @router.post("/posts/{post_id}/like", response_model=schemas.LikeToggleResponse)
-def toggle_like(post_id: int, user_id: int, db: Session = Depends(get_db)):
+def toggle_like(
+    post_id: int,
+    user_id: int,
+    intent: str = Query(default="toggle", pattern="^(toggle|like|unlike)$"),
+    db: Session = Depends(get_db),
+):
     post = db.get(models.Post, post_id)
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     user = db.get(models.User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    if intent == "like":
+        return crud.set_like(db, post_id=post_id, user_id=user_id, liked=True)
+    if intent == "unlike":
+        return crud.set_like(db, post_id=post_id, user_id=user_id, liked=False)
     return crud.toggle_like(db, post_id=post_id, user_id=user_id)
 
 

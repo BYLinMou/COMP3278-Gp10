@@ -7,6 +7,7 @@ from app.crud.posts import (
     list_post_comments,
     list_user_posts,
     record_post_view,
+    set_like,
     toggle_like,
 )
 from app.crud.users import (
@@ -14,6 +15,7 @@ from app.crud.users import (
     create_user,
     get_user_by_username,
     get_user_profile as _get_user_profile,
+    set_follow,
     list_user_history,
     list_users,
     toggle_follow,

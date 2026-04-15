@@ -56,12 +56,22 @@ def get_user_history(username: str, db: Session = Depends(get_db)):
 
 
 @router.post("/users/{username}/follow", response_model=schemas.FollowToggleResponse)
-def toggle_follow(username: str, follower_user_id: int = Query(...), db: Session = Depends(get_db)):
+def toggle_follow(
+    username: str,
+    follower_user_id: int = Query(...),
+    intent: str = Query(default="toggle", pattern="^(toggle|follow|unfollow)$"),
+    db: Session = Depends(get_db),
+):
     follower = db.get(models.User, follower_user_id)
     if not follower:
         raise HTTPException(status_code=404, detail="User not found")
     try:
-        result = crud.toggle_follow(db, follower_user_id, username)
+        if intent == "follow":
+            result = crud.set_follow(db, follower_user_id, username, True)
+        elif intent == "unfollow":
+            result = crud.set_follow(db, follower_user_id, username, False)
+        else:
+            result = crud.toggle_follow(db, follower_user_id, username)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     if not result:

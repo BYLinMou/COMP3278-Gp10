@@ -93,20 +93,31 @@ def toggle_like(db: Session, post_id: int, user_id: int) -> schemas.LikeToggleRe
     existing = db.scalar(
         select(models.Like).where(models.Like.post_id == post_id, models.Like.user_id == user_id)
     )
-    liked = False
-    if existing:
-        db.delete(existing)
-        db.commit()
+    return set_like(db, post_id=post_id, user_id=user_id, liked=existing is None)
+
+
+def set_like(db: Session, post_id: int, user_id: int, liked: bool) -> schemas.LikeToggleResponse:
+    existing = db.scalar(
+        select(models.Like).where(models.Like.post_id == post_id, models.Like.user_id == user_id)
+    )
+    current_liked = existing is not None
+
+    if liked:
+        if not current_liked:
+            db.add(models.Like(post_id=post_id, user_id=user_id))
+            try:
+                db.commit()
+            except IntegrityError:
+                db.rollback()
+        result_liked = True
     else:
-        db.add(models.Like(post_id=post_id, user_id=user_id))
-        try:
+        if existing:
+            db.delete(existing)
             db.commit()
-            liked = True
-        except IntegrityError:
-            db.rollback()
+        result_liked = False
 
     count = db.scalar(select(func.count(models.Like.id)).where(models.Like.post_id == post_id)) or 0
-    return schemas.LikeToggleResponse(post_id=post_id, liked=liked, like_count=count)
+    return schemas.LikeToggleResponse(post_id=post_id, liked=result_liked, like_count=count)
 
 
 def create_comment(db: Session, post_id: int, payload: schemas.CommentCreate) -> models.Comment:

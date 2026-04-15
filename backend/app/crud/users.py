@@ -139,6 +139,31 @@ def toggle_follow(db: Session, follower_user_id: int, followee_username: str) ->
         return None
     if follower_user_id == followee.id:
         raise ValueError("You cannot follow yourself")
+    existing = db.scalar(
+        select(models.Follow).where(
+            models.Follow.follower_id == follower_user_id,
+            models.Follow.followee_id == followee.id,
+        )
+    )
+    return set_follow(
+        db,
+        follower_user_id=follower_user_id,
+        followee_username=followee_username,
+        is_following=existing is None,
+    )
+
+
+def set_follow(
+    db: Session,
+    follower_user_id: int,
+    followee_username: str,
+    is_following: bool,
+) -> schemas.FollowToggleResponse | None:
+    followee = get_user_by_username(db, followee_username)
+    if not followee:
+        return None
+    if follower_user_id == followee.id:
+        raise ValueError("You cannot follow yourself")
 
     existing = db.scalar(
         select(models.Follow).where(
@@ -147,17 +172,19 @@ def toggle_follow(db: Session, follower_user_id: int, followee_username: str) ->
         )
     )
 
-    is_following = False
-    if existing:
-        db.delete(existing)
-        db.commit()
+    if is_following:
+        if not existing:
+            db.add(models.Follow(follower_id=follower_user_id, followee_id=followee.id))
+            try:
+                db.commit()
+            except IntegrityError:
+                db.rollback()
+        result_is_following = True
     else:
-        db.add(models.Follow(follower_id=follower_user_id, followee_id=followee.id))
-        try:
+        if existing:
+            db.delete(existing)
             db.commit()
-            is_following = True
-        except IntegrityError:
-            db.rollback()
+        result_is_following = False
 
     followers_count = db.scalar(
         select(func.count(models.Follow.id)).where(models.Follow.followee_id == followee.id)
@@ -165,7 +192,7 @@ def toggle_follow(db: Session, follower_user_id: int, followee_username: str) ->
 
     return schemas.FollowToggleResponse(
         username=followee.username,
-        is_following=is_following,
+        is_following=result_is_following,
         followers_count=followers_count,
     )
 
