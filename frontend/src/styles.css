@@ -109,6 +109,19 @@ button { cursor: pointer; }
 }
 .ghost-text-button { color: var(--muted); }
 .ghost-text-button:hover { color: var(--gold); }
+.creator-randomizer-button {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  border-radius: 999px;
+}
+.creator-randomizer-button svg {
+  width: 18px;
+  height: 18px;
+}
 .page-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;

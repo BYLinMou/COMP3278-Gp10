@@ -87,7 +87,7 @@ export default function HomePage({
             <span className="eyebrow">Top Creators</span>
             <h2>Recommended</h2>
             <button
-              className="ghost-text-button"
+              className="ghost-text-button creator-randomizer-button"
               onClick={onRefreshCreators}
               type="button"
               aria-label="Randomize creator recommendations"
