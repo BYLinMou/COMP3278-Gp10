@@ -57,13 +57,14 @@ def authenticate_user(db: Session, payload: schemas.UserLogin) -> models.User | 
     return user
 
 
-def list_feed(db: Session, sort_by: str = "recent") -> list[schemas.PostRead]:
+def list_feed(db: Session, sort_by: str = "recent", category: str | None = None) -> list[schemas.PostRead]:
     like_count = func.count(func.distinct(models.Like.id)).label("like_count")
     comment_count = func.count(func.distinct(models.Comment.id)).label("comment_count")
 
     query: Select = (
         select(
             models.Post.id,
+            models.Post.category,
             models.Post.description,
             models.Post.image_url,
             models.Post.created_at,
@@ -77,6 +78,9 @@ def list_feed(db: Session, sort_by: str = "recent") -> list[schemas.PostRead]:
         .outerjoin(models.Comment, models.Comment.post_id == models.Post.id)
         .group_by(models.Post.id, models.User.id)
     )
+
+    if category:
+        query = query.where(models.Post.category == category)
 
     if sort_by == "popular":
         query = query.order_by(desc(like_count), desc(models.Post.created_at))

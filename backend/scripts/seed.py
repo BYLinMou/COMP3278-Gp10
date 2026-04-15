@@ -42,24 +42,28 @@ def seed() -> None:
         posts = [
             Post(
                 user_id=users[0].id,
+                category="Photography",
                 description="Golden lights over the harbor after class.",
                 image_url="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
                 created_at=now - timedelta(days=3, hours=2),
             ),
             Post(
                 user_id=users[1].id,
+                category="Cafe",
                 description="A quiet table, good coffee, and project planning.",
                 image_url="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085",
                 created_at=now - timedelta(days=1, hours=4),
             ),
             Post(
                 user_id=users[2].id,
+                category="Inspiration",
                 description="Studio textures and geometric shadows.",
                 image_url="https://images.unsplash.com/photo-1517048676732-d65bc937f952",
                 created_at=now - timedelta(hours=5),
             ),
             Post(
                 user_id=users[1].id,
+                category="Nightlife",
                 description="Bronze reflections in the arcade right before midnight.",
                 image_url="https://images.unsplash.com/photo-1521572267360-ee0c2909d518",
                 created_at=now - timedelta(minutes=35),

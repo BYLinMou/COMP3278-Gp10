@@ -17,8 +17,12 @@ async function request(path, options = {}) {
   return response.json();
 }
 
-export function getFeed(sortBy = "recent") {
-  return request(`/feed?sort_by=${sortBy}`);
+export function getFeed(sortBy = "recent", category) {
+  const query = new URLSearchParams({ sort_by: sortBy });
+  if (category && category !== "全部") {
+    query.set("category", category);
+  }
+  return request(`/feed?${query.toString()}`);
 }
 
 export function getAnalyticsOverview() {
@@ -65,9 +69,10 @@ export function createPost(payload) {
   });
 }
 
-export async function createUploadedPost({ userId, description, imageFile }) {
+export async function createUploadedPost({ userId, category, description, imageFile }) {
   const form = new FormData();
   form.append("user_id", String(userId));
+  form.append("category", category);
   form.append("description", description);
   form.append("image", imageFile);
 

@@ -37,6 +37,7 @@ app.add_middleware(
 def startup() -> None:
     Base.metadata.create_all(bind=engine)
     ensure_password_schema()
+    ensure_post_schema()
 
 
 def ensure_password_schema() -> None:
@@ -60,6 +61,21 @@ def ensure_password_schema() -> None:
             )
 
         connection.execute(text("ALTER TABLE users MODIFY COLUMN password_hash VARCHAR(255) NOT NULL"))
+
+
+def ensure_post_schema() -> None:
+    inspector = inspect(engine)
+    post_columns = {column["name"] for column in inspector.get_columns("posts")}
+    if "category" in post_columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE posts ADD COLUMN category VARCHAR(50) NULL"))
+        connection.execute(text("UPDATE posts SET category = 'Inspiration' WHERE category IS NULL"))
+        try:
+            connection.execute(text("ALTER TABLE posts MODIFY COLUMN category VARCHAR(50) NOT NULL"))
+        except Exception:
+            pass
 
 
 app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
@@ -119,9 +135,10 @@ def update_user(username: str, payload: schemas.UserUpdate, db: Session = Depend
 @app.get("/feed", response_model=list[schemas.PostRead])
 def get_feed(
     sort_by: str = Query(default="recent", pattern="^(recent|popular)$"),
+    category: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ):
-    return crud.list_feed(db, sort_by=sort_by)
+    return crud.list_feed(db, sort_by=sort_by, category=category)
 
 
 @app.post("/posts", status_code=201)
@@ -136,6 +153,7 @@ def create_post(payload: schemas.PostCreate, db: Session = Depends(get_db)):
 @app.post("/posts/upload", status_code=201)
 async def create_uploaded_post(
     user_id: int = Form(...),
+    category: str = Form(...),
     description: str = Form(...),
     image: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -157,6 +175,7 @@ async def create_uploaded_post(
         db,
         schemas.PostCreate(
             user_id=user_id,
+            category=category,
             description=description,
             image_url=f"http://127.0.0.1:8000/uploads/{filename}",
         ),

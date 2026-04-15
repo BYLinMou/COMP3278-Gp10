@@ -33,12 +33,14 @@ class UserRead(BaseModel):
 
 class PostCreate(BaseModel):
     user_id: int
+    category: str = Field(min_length=1, max_length=50)
     description: str = Field(min_length=1, max_length=2000)
     image_url: HttpUrl
 
 
 class PostRead(BaseModel):
     id: int
+    category: str
     description: str
     image_url: str
     created_at: datetime
