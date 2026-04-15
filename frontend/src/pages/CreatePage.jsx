@@ -1,15 +1,28 @@
 import { CATEGORIES } from "../lib/constants";
 
 export default function CreatePage({ currentUser, postForm, setPostForm, onSubmit }) {
+  const publishCategories = CATEGORIES.filter((item) => item !== "All");
+
   return (
     <section className="center-panel">
       <section className="sidebar-card sidebar-card--wide">
         <div className="card-header"><span className="eyebrow">Create</span><h2>Publish a New Post</h2></div>
         <form className="stack-form" onSubmit={onSubmit}>
-          <label>Category
-            <select className="deco-select" value={postForm.category} onChange={(event) => setPostForm((current) => ({ ...current, category: event.target.value }))} disabled={!currentUser}>
-              {CATEGORIES.filter((item) => item !== "All").map((item) => <option key={item} value={item}>{item}</option>)}
-            </select>
+          <label>
+            Category
+            <div className="category-tabs">
+              {publishCategories.map((item) => (
+                <button
+                  key={item}
+                  className={`category-tab ${postForm.category === item ? "category-tab--active" : ""}`}
+                  onClick={() => setPostForm((current) => ({ ...current, category: item }))}
+                  type="button"
+                  disabled={!currentUser}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
           </label>
           <label>Caption
             <textarea value={postForm.description} onChange={(event) => setPostForm((current) => ({ ...current, description: event.target.value }))} placeholder="Tell the feed what this moment means..." required disabled={!currentUser} />
@@ -24,4 +37,3 @@ export default function CreatePage({ currentUser, postForm, setPostForm, onSubmi
     </section>
   );
 }
-
