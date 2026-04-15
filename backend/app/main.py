@@ -194,9 +194,28 @@ def get_post_comments(post_id: int, db: Session = Depends(get_db)):
     return crud.list_post_comments(db, post_id)
 
 
+@app.post("/posts/{post_id}/views", status_code=204)
+def record_post_view(post_id: int, user_id: int, db: Session = Depends(get_db)):
+    post = db.get(models.Post, post_id)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    user = db.get(models.User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    crud.record_post_view(db, user_id=user_id, post_id=post_id)
+
+
 @app.get("/users/{username}/posts", response_model=list[schemas.PostRead])
 def get_user_posts(username: str, db: Session = Depends(get_db)):
     return crud.list_user_posts(db, username)
+
+
+@app.get("/users/{username}/history", response_model=list[schemas.ViewHistoryRead])
+def get_user_history(username: str, db: Session = Depends(get_db)):
+    user = crud.get_user_by_username(db, username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return crud.list_user_history(db, username)
 
 
 @app.post("/query/sql", response_model=schemas.SqlQueryResponse)

@@ -106,3 +106,13 @@ class UserProfileResponse(BaseModel):
     user: UserRead
     stats: UserProfileStats
     recent_posts: list[PostRead]
+
+
+class ViewHistoryRead(BaseModel):
+    id: int
+    post_id: int
+    viewed_at: datetime
+    username: str
+    display_name: str
+    description: str
+    image_url: str

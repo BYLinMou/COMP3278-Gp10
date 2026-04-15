@@ -5,15 +5,16 @@ import {
   createUser,
   getFeed,
   getPostComments,
+  getUserHistory,
   getUserProfile,
   getUsers,
   loginUser,
+  recordPostView,
   toggleLike,
   updateUser,
 } from "./api";
 
 const SESSION_KEY = "hkugram_username";
-const HISTORY_KEY = "hkugram_browsing_history";
 
 const blankRegistration = {
   username: "",
@@ -314,11 +315,6 @@ export default function App() {
   const [currentView, setCurrentView] = useState("home");
   const [browsingHistory, setBrowsingHistory] = useState([]);
 
-  function persistBrowsingHistory(nextHistory) {
-    setBrowsingHistory(nextHistory);
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(nextHistory));
-  }
-
   async function refreshUsers() {
     const nextUsers = await getUsers();
     setUsers(nextUsers);
@@ -343,6 +339,12 @@ export default function App() {
     return profile;
   }
 
+  async function loadHistory(username) {
+    const history = await getUserHistory(username);
+    setBrowsingHistory(history);
+    return history;
+  }
+
   async function setLoggedInUser(user) {
     setCurrentUser(user);
     setLoginForm((current) => ({ ...current, username: user.username, password: "" }));
@@ -353,10 +355,12 @@ export default function App() {
     });
     localStorage.setItem(SESSION_KEY, user.username);
     await loadProfile(user.username);
+    await loadHistory(user.username);
   }
 
   function logout() {
     setCurrentUser(null);
+    setBrowsingHistory([]);
     localStorage.removeItem(SESSION_KEY);
     setCurrentView("home");
     setStatus("Logged out.");
@@ -368,16 +372,13 @@ export default function App() {
     setSelectedComments(comments);
     setIsThreadOpen(true);
     await loadProfile(post.username);
-    setStatus(`Opened thread for @${post.username}`);
-
-    const nextRecord = {
-      id: post.id,
-      username: post.username,
-      description: post.description,
-      viewed_at: new Date().toISOString(),
-    };
-    const deduped = browsingHistory.filter((entry) => entry.id !== post.id);
-    persistBrowsingHistory([nextRecord, ...deduped].slice(0, 12));
+    if (currentUser) {
+      await recordPostView(post.id, currentUser.id);
+      await loadHistory(currentUser.username);
+      setStatus(`Opened thread for @${post.username} and saved it to your history.`);
+    } else {
+      setStatus(`Opened thread for @${post.username}`);
+    }
   }
 
   useEffect(() => {
@@ -387,15 +388,6 @@ export default function App() {
           refreshUsers(),
           refreshFeed("recent"),
         ]);
-
-        const savedHistory = localStorage.getItem(HISTORY_KEY);
-        if (savedHistory) {
-          try {
-            setBrowsingHistory(JSON.parse(savedHistory));
-          } catch {
-            localStorage.removeItem(HISTORY_KEY);
-          }
-        }
 
         const savedUsername = localStorage.getItem(SESSION_KEY);
         if (savedUsername) {
@@ -646,14 +638,14 @@ export default function App() {
                 {browsingHistory.length ? (
                   <div className="history-list">
                     {browsingHistory.map((entry) => (
-                      <article key={`${entry.id}-${entry.viewed_at}`} className="history-record">
+                      <article key={`${entry.post_id}-${entry.viewed_at}`} className="history-record">
                         <strong>@{entry.username}</strong>
                         <span>{entry.description}</span>
                         <time>{formatDate(entry.viewed_at)}</time>
                         <button
                           className="inline-thread-link"
                           onClick={() => {
-                            const post = feed.find((item) => item.id === entry.id);
+                            const post = feed.find((item) => item.id === entry.post_id);
                             if (post) {
                               openPost(post);
                             } else {
@@ -667,7 +659,11 @@ export default function App() {
                     ))}
                   </div>
                 ) : (
-                  <p className="muted-copy">Open posts from the feed and they will appear here.</p>
+                  <p className="muted-copy">
+                    {currentUser
+                      ? "Open posts from the feed and they will appear here."
+                      : "Log in first to save and revisit your browsing history."}
+                  </p>
                 )}
               </section>
             </section>

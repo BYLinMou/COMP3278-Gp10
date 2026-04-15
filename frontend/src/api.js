@@ -43,6 +43,10 @@ export function getUserProfile(username) {
   return request(`/users/${username}`);
 }
 
+export function getUserHistory(username) {
+  return request(`/users/${username}/history`);
+}
+
 export function updateUser(username, payload) {
   return request(`/users/${username}`, {
     method: "PUT",
@@ -91,4 +95,15 @@ export function createComment(postId, payload) {
 
 export function getPostComments(postId) {
   return request(`/posts/${postId}/comments`);
+}
+
+export async function recordPostView(postId, userId) {
+  const response = await fetch(`${API_BASE}/posts/${postId}/views?user_id=${userId}`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail ?? "Failed to record view");
+  }
 }

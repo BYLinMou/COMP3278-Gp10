@@ -205,3 +205,41 @@ def get_user_profile(db: Session, username: str) -> schemas.UserProfileResponse 
         stats=stats,
         recent_posts=list_user_posts(db, username)[:6],
     )
+
+
+def record_post_view(db: Session, user_id: int, post_id: int) -> None:
+    existing = db.scalar(
+        select(models.ViewHistory).where(
+            models.ViewHistory.user_id == user_id,
+            models.ViewHistory.post_id == post_id,
+        )
+    )
+    if existing:
+        db.delete(existing)
+        db.flush()
+
+    db.add(models.ViewHistory(user_id=user_id, post_id=post_id))
+    db.commit()
+
+
+def list_user_history(db: Session, username: str) -> list[schemas.ViewHistoryRead]:
+    user = get_user_by_username(db, username)
+    if not user:
+        return []
+
+    rows = db.execute(
+        select(
+            models.ViewHistory.id,
+            models.ViewHistory.post_id,
+            models.ViewHistory.viewed_at,
+            models.User.username,
+            models.User.display_name,
+            models.Post.description,
+            models.Post.image_url,
+        )
+        .join(models.Post, models.Post.id == models.ViewHistory.post_id)
+        .join(models.User, models.User.id == models.Post.user_id)
+        .where(models.ViewHistory.user_id == user.id)
+        .order_by(models.ViewHistory.viewed_at.desc())
+    ).all()
+    return [schemas.ViewHistoryRead.model_validate(row._mapping) for row in rows]
