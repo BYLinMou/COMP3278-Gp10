@@ -1,28 +1,20 @@
-from pathlib import Path
-from uuid import uuid4
-
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, Response, UploadFile
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import inspect, text
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
 
-from app import crud, models, schemas
-from app.config import get_settings
-from app.database import Base, engine, get_db
-from app.query_engine import (
-    SCHEMA_CONTEXT,
-    execute_read_only_sql,
-    list_supported_questions,
-    text_to_sql,
+from app.api.routes import (
+    analytics_router,
+    auth_router,
+    posts_router,
+    query_router,
+    users_router,
 )
-from app.security import hash_password, sign_session_value, verify_session_value
+from app.config import get_settings
+from app.services.bootstrap import initialize_database
+from app.services.uploads import get_uploads_dir
 
 settings = get_settings()
 app = FastAPI(title=settings.app_name)
-uploads_dir = Path(__file__).resolve().parents[1] / "uploads"
-uploads_dir.mkdir(parents=True, exist_ok=True)
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,50 +27,10 @@ app.add_middleware(
 
 @app.on_event("startup")
 def startup() -> None:
-    Base.metadata.create_all(bind=engine)
-    ensure_password_schema()
-    ensure_post_schema()
+    initialize_database()
 
 
-def ensure_password_schema() -> None:
-    inspector = inspect(engine)
-    user_columns = {column["name"] for column in inspector.get_columns("users")}
-    if "password_hash" in user_columns:
-        return
-
-    with engine.begin() as connection:
-        connection.execute(text("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL"))
-        connection.execute(text("UPDATE users SET password_hash = :password_hash"), {"password_hash": ""})
-
-        rows = connection.execute(text("SELECT id, username FROM users")).mappings().all()
-        for row in rows:
-            connection.execute(
-                text("UPDATE users SET password_hash = :password_hash WHERE id = :user_id"),
-                {
-                    "password_hash": hash_password(row["username"] + "123"),
-                    "user_id": row["id"],
-                },
-            )
-
-        connection.execute(text("ALTER TABLE users MODIFY COLUMN password_hash VARCHAR(255) NOT NULL"))
-
-
-def ensure_post_schema() -> None:
-    inspector = inspect(engine)
-    post_columns = {column["name"] for column in inspector.get_columns("posts")}
-    if "category" in post_columns:
-        return
-
-    with engine.begin() as connection:
-        connection.execute(text("ALTER TABLE posts ADD COLUMN category VARCHAR(50) NULL"))
-        connection.execute(text("UPDATE posts SET category = 'Inspiration' WHERE category IS NULL"))
-        try:
-            connection.execute(text("ALTER TABLE posts MODIFY COLUMN category VARCHAR(50) NOT NULL"))
-        except Exception:
-            pass
-
-
-app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+app.mount("/uploads", StaticFiles(directory=get_uploads_dir()), name="uploads")
 
 
 @app.get("/health")
@@ -86,227 +38,8 @@ def healthcheck() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/query/schema")
-def get_query_schema() -> dict[str, object]:
-    return {
-        "tables": SCHEMA_CONTEXT,
-        "supported_questions": list_supported_questions(),
-    }
-
-
-@app.post("/users", response_model=schemas.UserRead, status_code=201)
-def create_user(payload: schemas.UserCreate, db: Session = Depends(get_db)):
-    try:
-        return crud.create_user(db, payload)
-    except IntegrityError as exc:
-        db.rollback()
-        raise HTTPException(status_code=409, detail="Username already exists") from exc
-
-
-def set_session_cookie(response: Response, username: str) -> None:
-    response.set_cookie(
-        key=settings.session_cookie_name,
-        value=sign_session_value(username, settings.session_secret),
-        httponly=True,
-        samesite="lax",
-        secure=False,
-        max_age=settings.session_max_age_seconds,
-    )
-
-
-def clear_session_cookie(response: Response) -> None:
-    response.delete_cookie(key=settings.session_cookie_name, httponly=True, samesite="lax")
-
-
-@app.post("/auth/login", response_model=schemas.UserRead)
-def login(payload: schemas.UserLogin, response: Response, db: Session = Depends(get_db)):
-    user = crud.authenticate_user(db, payload)
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid username or password")
-    set_session_cookie(response, user.username)
-    return user
-
-
-@app.get("/auth/session", response_model=schemas.UserRead)
-def get_session(request: Request, db: Session = Depends(get_db)):
-    session_value = request.cookies.get(settings.session_cookie_name)
-    if not session_value:
-        raise HTTPException(status_code=401, detail="Not logged in")
-
-    username = verify_session_value(session_value, settings.session_secret)
-    if not username:
-        raise HTTPException(status_code=401, detail="Invalid session")
-
-    user = crud.get_user_by_username(db, username)
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid session")
-    return user
-
-
-@app.post("/auth/logout", status_code=204)
-def logout(response: Response):
-    clear_session_cookie(response)
-
-
-@app.get("/users", response_model=list[schemas.UserRead])
-def get_users(db: Session = Depends(get_db)):
-    return crud.list_users(db)
-
-
-@app.get("/users/{username}", response_model=schemas.UserProfileResponse)
-def get_user_profile(username: str, db: Session = Depends(get_db)):
-    profile = crud.get_user_profile(db, username)
-    if not profile:
-        raise HTTPException(status_code=404, detail="User not found")
-    return profile
-
-
-@app.put("/users/{username}", response_model=schemas.UserRead)
-def update_user(username: str, payload: schemas.UserUpdate, db: Session = Depends(get_db)):
-    user = crud.update_user(db, username, payload)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
-
-
-@app.get("/feed", response_model=list[schemas.PostRead])
-def get_feed(
-    sort_by: str = Query(default="recent", pattern="^(recent|popular)$"),
-    category: str | None = Query(default=None),
-    db: Session = Depends(get_db),
-):
-    return crud.list_feed(db, sort_by=sort_by, category=category)
-
-
-@app.post("/posts", status_code=201)
-def create_post(payload: schemas.PostCreate, db: Session = Depends(get_db)):
-    user = db.get(models.User, payload.user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    post = crud.create_post(db, payload)
-    return {"id": post.id}
-
-
-@app.get("/posts/{post_id}", response_model=schemas.PostRead)
-def get_post(post_id: int, db: Session = Depends(get_db)):
-    post = crud.get_post_detail(db, post_id)
-    if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
-    return post
-
-
-@app.post("/posts/upload", status_code=201)
-async def create_uploaded_post(
-    user_id: int = Form(...),
-    category: str = Form(...),
-    description: str = Form(...),
-    image: UploadFile = File(...),
-    db: Session = Depends(get_db),
-):
-    user = db.get(models.User, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    if not image.content_type or not image.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Uploaded file must be an image")
-
-    suffix = Path(image.filename or "upload").suffix or ".jpg"
-    filename = f"{uuid4().hex}{suffix}"
-    file_path = uploads_dir / filename
-    content = await image.read()
-    file_path.write_bytes(content)
-
-    post = crud.create_post(
-        db,
-        schemas.PostCreate(
-            user_id=user_id,
-            category=category,
-            description=description,
-            image_url=f"http://127.0.0.1:8000/uploads/{filename}",
-        ),
-    )
-    return {"id": post.id, "image_url": post.image_url}
-
-
-@app.post("/posts/{post_id}/like", response_model=schemas.LikeToggleResponse)
-def toggle_like(post_id: int, user_id: int, db: Session = Depends(get_db)):
-    post = db.get(models.Post, post_id)
-    if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
-    user = db.get(models.User, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return crud.toggle_like(db, post_id=post_id, user_id=user_id)
-
-
-@app.post("/posts/{post_id}/comments", response_model=schemas.CommentRead, status_code=201)
-def create_comment(post_id: int, payload: schemas.CommentCreate, db: Session = Depends(get_db)):
-    post = db.get(models.Post, post_id)
-    if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
-    user = db.get(models.User, payload.user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return crud.create_comment(db, post_id=post_id, payload=payload)
-
-
-@app.get("/posts/{post_id}/comments", response_model=list[schemas.CommentRead])
-def get_post_comments(post_id: int, db: Session = Depends(get_db)):
-    post = db.get(models.Post, post_id)
-    if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
-    return crud.list_post_comments(db, post_id)
-
-
-@app.post("/posts/{post_id}/views", status_code=204)
-def record_post_view(post_id: int, user_id: int, db: Session = Depends(get_db)):
-    post = db.get(models.Post, post_id)
-    if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
-    user = db.get(models.User, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    crud.record_post_view(db, user_id=user_id, post_id=post_id)
-
-
-@app.get("/users/{username}/posts", response_model=list[schemas.PostRead])
-def get_user_posts(username: str, db: Session = Depends(get_db)):
-    return crud.list_user_posts(db, username)
-
-
-@app.get("/users/{username}/history", response_model=list[schemas.ViewHistoryRead])
-def get_user_history(username: str, db: Session = Depends(get_db)):
-    user = crud.get_user_by_username(db, username)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return crud.list_user_history(db, username)
-
-
-@app.get("/analytics/overview", response_model=schemas.AnalyticsOverview)
-def get_analytics_overview(db: Session = Depends(get_db)):
-    return crud.get_analytics_overview(db)
-
-
-@app.post("/query/sql", response_model=schemas.SqlQueryResponse)
-def run_sql_query(payload: schemas.SqlQueryRequest, db: Session = Depends(get_db)):
-    try:
-        return execute_read_only_sql(db, payload.sql, payload.params)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-
-@app.post("/query/text-to-sql", response_model=schemas.TextToSqlResponse)
-def run_text_to_sql_query(payload: schemas.TextToSqlRequest, db: Session = Depends(get_db)):
-    try:
-        generated = text_to_sql(payload.prompt)
-        result = execute_read_only_sql(db, generated.sql, generated.params)
-        return schemas.TextToSqlResponse(
-            title=generated.title,
-            sql=" ".join(generated.sql.split()),
-            params=generated.params,
-            columns=result["columns"],
-            row_count=result["row_count"],
-            rows=result["rows"],
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+app.include_router(auth_router)
+app.include_router(users_router)
+app.include_router(posts_router)
+app.include_router(analytics_router)
+app.include_router(query_router)
