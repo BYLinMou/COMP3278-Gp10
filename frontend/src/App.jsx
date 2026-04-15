@@ -30,6 +30,11 @@ const blankRegistration = { username: "", password: "", display_name: "", bio: "
 const blankLogin = { username: "", password: "" };
 const blankPost = { category: "Inspiration", description: "", imageFile: null };
 const blankSettings = { display_name: "", bio: "", password: "" };
+const guestProfile = {
+  user: { username: "guest", display_name: "Guest Visitor", bio: "" },
+  stats: { post_count: 0, total_likes_received: 0, total_comments_received: 0 },
+  recent_posts: [],
+};
 
 const icons = {
   home: <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.8" /><path d="m14.8 9.2-2.4 5.6-5.6 2.4 2.4-5.6 5.6-2.4Z" fill="none" stroke="currentColor" strokeWidth="1.8" /></svg>,
@@ -52,6 +57,29 @@ function formatCompactDate(value) {
 
 function demoPassword(username) {
   return username === "sam" ? "sam123456" : `${username}123`;
+}
+
+function parseRoute(pathname) {
+  if (pathname === "/create") return { view: "create" };
+  if (pathname === "/profile") return { view: "profile" };
+  if (pathname === "/history") return { view: "history" };
+  if (pathname === "/analytics") return { view: "analytics" };
+  if (pathname === "/settings") return { view: "settings" };
+  if (pathname.startsWith("/users/")) {
+    const username = decodeURIComponent(pathname.slice("/users/".length)).trim();
+    return username ? { view: "user", username } : { view: "home" };
+  }
+  return { view: "home" };
+}
+
+function routeToPath(route) {
+  if (route.view === "create") return "/create";
+  if (route.view === "profile") return "/profile";
+  if (route.view === "history") return "/history";
+  if (route.view === "analytics") return "/analytics";
+  if (route.view === "settings") return "/settings";
+  if (route.view === "user" && route.username) return `/users/${encodeURIComponent(route.username)}`;
+  return "/";
 }
 
 function Avatar({ username, size = "md" }) {
@@ -214,7 +242,7 @@ function ThreadDrawer({ currentUser, post, comments, commentBody, setCommentBody
   );
 }
 
-function ProfilePage({ profile, currentUser, onPostOpen }) {
+function ProfilePage({ profile, currentUser, onPostOpen, isOwnProfile = false, isGuestProfile = false }) {
   return (
     <section className="profile-page">
       <section className="profile-hero">
@@ -223,9 +251,9 @@ function ProfilePage({ profile, currentUser, onPostOpen }) {
           <div className="profile-hero__meta">
             <h2>{profile.user.display_name}</h2>
             <p>@{profile.user.username}</p>
-            <p className="profile-bio">{profile.user.bio || "This user has not written a bio yet."}</p>
+            <p className="profile-bio">{profile.user.bio || (isGuestProfile ? "Log in to turn this guest lounge into your personal salon." : "This user has not written a bio yet.")}</p>
           </div>
-          <button className="primary-pill-button" type="button">{currentUser?.username === profile.user.username ? "My Profile" : "Profile"}</button>
+          <button className="primary-pill-button" type="button">{isGuestProfile ? "Guest" : isOwnProfile ? "My Profile" : "Author Page"}</button>
         </div>
         <div className="profile-hero__stats">
           <div><strong>{profile.stats.post_count}</strong><span>Posts</span></div>
@@ -234,18 +262,25 @@ function ProfilePage({ profile, currentUser, onPostOpen }) {
           <div><strong>{profile.recent_posts.length}</strong><span>Recent</span></div>
         </div>
       </section>
-      <section className="profile-post-grid">
-        {profile.recent_posts.map((post) => (
-          <button className="profile-post-card" key={post.id} onClick={() => onPostOpen(post)} type="button">
-            <img src={post.image_url} alt={post.description} />
-            <span className="post-chip post-chip--overlay">{post.category}</span>
-            <div className="profile-post-card__overlay">
-              <p>{post.description}</p>
-              <div><span>{post.like_count} likes</span><span>{post.comment_count} comments</span></div>
-            </div>
-          </button>
-        ))}
-      </section>
+      {profile.recent_posts.length ? (
+        <section className="profile-post-grid">
+          {profile.recent_posts.map((post) => (
+            <button className="profile-post-card" key={post.id} onClick={() => onPostOpen(post)} type="button">
+              <img src={post.image_url} alt={post.description} />
+              <span className="post-chip post-chip--overlay">{post.category}</span>
+              <div className="profile-post-card__overlay">
+                <p>{post.description}</p>
+                <div><span>{post.like_count} likes</span><span>{post.comment_count} comments</span></div>
+              </div>
+            </button>
+          ))}
+        </section>
+      ) : (
+        <section className="sidebar-card sidebar-card--wide">
+          <div className="card-header"><span className="eyebrow">{isGuestProfile ? "Guest" : "No Posts Yet"}</span><h2>{isGuestProfile ? "Sign In To Build Your Salon" : "This Salon Is Quiet For Now"}</h2></div>
+          <p className="muted-copy">{isGuestProfile ? "Your profile route is available even before login. Stats stay at zero until you sign in and start posting." : "This user has not published any posts yet."}</p>
+        </section>
+      )}
     </section>
   );
 }
@@ -269,8 +304,21 @@ export default function App() {
   const [postForm, setPostForm] = useState(blankPost);
   const [commentBody, setCommentBody] = useState("");
   const [isThreadOpen, setIsThreadOpen] = useState(false);
-  const [currentView, setCurrentView] = useState("home");
+  const [route, setRoute] = useState(() => parseRoute(window.location.pathname));
   const [browsingHistory, setBrowsingHistory] = useState([]);
+
+  const currentView = route.view === "user" ? "user" : route.view;
+  const isOwnProfileRoute = route.view === "profile";
+  const activeProfile = isOwnProfileRoute ? (selectedProfile ?? guestProfile) : route.view === "user" ? selectedProfile : null;
+
+  function navigate(nextRoute) {
+    const normalized = typeof nextRoute === "string" ? parseRoute(nextRoute) : nextRoute;
+    const nextPath = typeof nextRoute === "string" ? nextRoute : routeToPath(normalized);
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({}, "", nextPath);
+    }
+    setRoute(normalized);
+  }
 
   async function refreshUsers() {
     const nextUsers = await getUsers();
@@ -310,15 +358,30 @@ export default function App() {
     setBrowsingHistory(history);
   }
 
-  async function goProfile(username) {
+  async function goUserPage(username) {
     try {
       await loadProfile(username);
-      setCurrentView("profile");
+      navigate({ view: "user", username });
       setIsThreadOpen(false);
-      setStatus(`Viewing @${username}'s profile`);
+      setStatus(`Viewing @${username}'s salon`);
     } catch (error) {
       setStatus(error.message);
     }
+  }
+
+  async function goMyProfile() {
+    setIsThreadOpen(false);
+    if (currentUser?.username) {
+      try {
+        await loadProfile(currentUser.username);
+      } catch (error) {
+        setStatus(error.message);
+      }
+    } else {
+      setSelectedProfile(null);
+    }
+    navigate({ view: "profile" });
+    setStatus(currentUser ? `Viewing your profile, @${currentUser.username}` : "Browsing the guest profile.");
   }
 
   async function setLoggedInUser(user) {
@@ -332,12 +395,10 @@ export default function App() {
 
   async function handleNavChange(nextView) {
     if (nextView === "profile") {
-      if (selectedProfile?.user.username) return setCurrentView("profile");
-      if (currentUser?.username) return goProfile(currentUser.username);
-      setStatus("Log in first to open a profile.");
+      await goMyProfile();
       return;
     }
-    setCurrentView(nextView);
+    navigate({ view: nextView });
   }
 
   async function openPost(post) {
@@ -345,7 +406,6 @@ export default function App() {
     setSelectedPost(post);
     setSelectedComments(comments);
     setIsThreadOpen(true);
-    await loadProfile(post.username);
     if (currentUser) {
       await recordPostView(post.id, currentUser.id);
       await loadHistory(currentUser.username);
@@ -369,6 +429,40 @@ export default function App() {
     }
     bootstrap();
   }, []);
+
+  useEffect(() => {
+    function syncRoute() {
+      setRoute(parseRoute(window.location.pathname));
+    }
+    window.addEventListener("popstate", syncRoute);
+    return () => window.removeEventListener("popstate", syncRoute);
+  }, []);
+
+  useEffect(() => {
+    async function syncProfileRoute() {
+      if (route.view === "profile") {
+        if (currentUser?.username) {
+          try {
+            await loadProfile(currentUser.username);
+          } catch (error) {
+            setStatus(error.message);
+          }
+        } else {
+          setSelectedProfile(null);
+        }
+        return;
+      }
+      if (route.view === "user" && route.username) {
+        try {
+          await loadProfile(route.username);
+        } catch (error) {
+          setSelectedProfile(null);
+          setStatus(error.message);
+        }
+      }
+    }
+    syncProfileRoute();
+  }, [route.view, route.username, currentUser?.username]);
 
   async function handleLogin(event) {
     event.preventDefault();
@@ -434,7 +528,8 @@ export default function App() {
     try {
       await toggleLike(postId, userId);
       await Promise.all([refreshFeed(sortBy, category), loadAnalytics()]);
-      if (selectedProfile) await loadProfile(selectedProfile.user.username);
+      if (route.view === "profile" && currentUser?.username) await loadProfile(currentUser.username);
+      if (route.view === "user" && route.username) await loadProfile(route.username);
     } catch (error) {
       setStatus(error.message);
     }
@@ -458,16 +553,17 @@ export default function App() {
 
   function logout() {
     setCurrentUser(null);
+    setSelectedProfile(null);
     setBrowsingHistory([]);
     localStorage.removeItem(SESSION_KEY);
-    setCurrentView("home");
+    navigate({ view: "home" });
     setStatus("Logged out.");
   }
 
   return (
     <div className="social-app-shell">
       <div className="background-pattern" aria-hidden="true" />
-      <TopNav currentView={currentView} onChange={handleNavChange} currentUser={currentUser} onProfile={goProfile} onLogout={logout} />
+      <TopNav currentView={currentView === "user" ? "" : currentView} onChange={handleNavChange} currentUser={currentUser} onProfile={goMyProfile} onLogout={logout} />
       <main className="page-stage">
         {currentView === "home" ? (
           <section className="page-grid">
@@ -510,7 +606,7 @@ export default function App() {
                 </section>
               ) : feed.length ? (
                 <div className="feed-waterfall">
-                  {feed.map((post) => <PostCard key={post.id} post={post} currentUserId={currentUser?.id} onLike={handleLike} onOpen={openPost} onProfile={goProfile} />)}
+                  {feed.map((post) => <PostCard key={post.id} post={post} currentUserId={currentUser?.id} onLike={handleLike} onOpen={openPost} onProfile={goUserPage} />)}
                 </div>
               ) : (
                 <section className="feed-placeholder" role="status">
@@ -524,7 +620,7 @@ export default function App() {
               <section className="sidebar-card">
                 <div className="card-header"><span className="eyebrow">Session</span><h2>{currentUser ? "Signed In" : "Guest"}</h2></div>
                 {currentUser ? (
-                  <button className="user-chip user-chip--full" onClick={() => goProfile(currentUser.username)} type="button">
+                  <button className="user-chip user-chip--full" onClick={goMyProfile} type="button">
                     <Avatar username={currentUser.username} size="sm" />
                     <div><strong>{currentUser.display_name}</strong><span>@{currentUser.username}</span></div>
                   </button>
@@ -533,7 +629,7 @@ export default function App() {
               <section className="sidebar-card">
                 <div className="card-header"><span className="eyebrow">Top Creators</span><h2>Recommended</h2></div>
                 <div className="sidebar-list">
-                  {analytics?.active_users?.slice(0, 4).map((user) => <SidebarUser key={user.user_id} user={user} onProfile={goProfile} extra={`${user.post_count} posts`} />)}
+                  {analytics?.active_users?.slice(0, 4).map((user) => <SidebarUser key={user.user_id} user={user} onProfile={goUserPage} extra={`${user.post_count} posts`} />)}
                 </div>
               </section>
             </aside>
@@ -563,7 +659,7 @@ export default function App() {
           </section>
         ) : null}
 
-        {currentView === "profile" && selectedProfile ? <ProfilePage profile={selectedProfile} currentUser={currentUser} onPostOpen={openPost} /> : null}
+        {(currentView === "profile" || currentView === "user") && activeProfile ? <ProfilePage profile={activeProfile} currentUser={currentUser} onPostOpen={openPost} isOwnProfile={isOwnProfileRoute && !!currentUser} isGuestProfile={isOwnProfileRoute && !currentUser} /> : null}
 
         {currentView === "history" ? (
           <section className="center-panel">
@@ -575,7 +671,7 @@ export default function App() {
                     <article key={`${entry.post_id}-${entry.viewed_at}`} className="history-record history-record--with-thumb">
                       <img src={entry.image_url} alt={entry.description} />
                       <div><strong>@{entry.username}</strong><span>{entry.description}</span><time>{formatDate(entry.viewed_at)}</time></div>
-                      <button className="ghost-text-button" onClick={() => goProfile(entry.username)} type="button">View Author</button>
+                      <button className="ghost-text-button" onClick={() => goUserPage(entry.username)} type="button">View Author</button>
                     </article>
                   ))}
                 </div>
@@ -607,7 +703,7 @@ export default function App() {
               <section className="sidebar-card">
                 <div className="card-header"><span className="eyebrow">Most Active</span><h2>Creator Ranking</h2></div>
                 <div className="sidebar-list">
-                  {analytics?.active_users?.map((user) => <SidebarUser key={user.user_id} user={user} onProfile={goProfile} extra={`${user.post_count}`} />)}
+                  {analytics?.active_users?.map((user) => <SidebarUser key={user.user_id} user={user} onProfile={goUserPage} extra={`${user.post_count}`} />)}
                 </div>
               </section>
             </aside>
@@ -677,7 +773,7 @@ export default function App() {
           </section>
         ) : null}
       </main>
-      <ThreadDrawer currentUser={currentUser} post={isThreadOpen ? selectedPost : null} comments={selectedComments} commentBody={commentBody} setCommentBody={setCommentBody} onComment={handleComment} onClose={() => setIsThreadOpen(false)} onProfile={goProfile} />
+      <ThreadDrawer currentUser={currentUser} post={isThreadOpen ? selectedPost : null} comments={selectedComments} commentBody={commentBody} setCommentBody={setCommentBody} onComment={handleComment} onClose={() => setIsThreadOpen(false)} onProfile={goUserPage} />
     </div>
   );
 }
