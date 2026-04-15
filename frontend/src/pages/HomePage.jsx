@@ -2,6 +2,7 @@ import Avatar from "../components/Avatar";
 import CategoryTabs from "../components/CategoryTabs";
 import PostCard from "../components/PostCard";
 import SidebarUser from "../components/SidebarUser";
+import { icons } from "../lib/icons";
 
 export default function HomePage({
   category,
@@ -85,7 +86,15 @@ export default function HomePage({
           <div className="card-header">
             <span className="eyebrow">Top Creators</span>
             <h2>Recommended</h2>
-            <button className="ghost-text-button" onClick={onRefreshCreators} type="button">Randomize</button>
+            <button
+              className="ghost-text-button"
+              onClick={onRefreshCreators}
+              type="button"
+              aria-label="Randomize creator recommendations"
+              title="Randomize creator recommendations"
+            >
+              {icons.shuffle}
+            </button>
           </div>
           <div className="sidebar-list">
             {recommendedCreators.map((user) => <SidebarUser key={user.user_id} user={user} onProfile={onOpenProfile} extra={`${user.post_count} posts`} />)}
