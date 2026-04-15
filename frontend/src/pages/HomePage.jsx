@@ -83,9 +83,11 @@ export default function HomePage({
           ) : <p className="muted-copy">Log in to like, comment, publish, and keep a browsing history.</p>}
         </section>
         <section className="sidebar-card">
-          <div className="card-header">
-            <span className="eyebrow">Top Creators</span>
-            <h2>Recommended</h2>
+          <div className="card-header card-header--with-action">
+            <div>
+              <span className="eyebrow">Top Creators</span>
+              <h2>Recommended</h2>
+            </div>
             <button
               className="ghost-text-button creator-randomizer-button"
               onClick={onRefreshCreators}

@@ -146,6 +146,12 @@ button { cursor: pointer; }
 .discovery-header, .sidebar-card { padding: 1rem 1.1rem; }
 .sidebar-card--wide { min-width: 0; }
 .card-header { margin-bottom: 0.95rem; }
+.card-header--with-action {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.9rem;
+}
 .card-header h2 { font-size: 1.15rem; }
 .muted-copy, .author-row__meta span, .sidebar-user span, .history-record time, .comment-item time, .profile-hero__meta p { color: var(--muted); }
 
