@@ -4,7 +4,6 @@ import PostCard from "../components/PostCard";
 import SidebarUser from "../components/SidebarUser";
 
 export default function HomePage({
-  analytics,
   category,
   currentUser,
   feed,
@@ -15,7 +14,9 @@ export default function HomePage({
   onOpenPost,
   onOpenProfile,
   onOpenSelfProfile,
+  onRefreshCreators,
   onSortChange,
+  recommendedCreators,
   sortBy,
   status,
 }) {
@@ -81,13 +82,16 @@ export default function HomePage({
           ) : <p className="muted-copy">Log in to like, comment, publish, and keep a browsing history.</p>}
         </section>
         <section className="sidebar-card">
-          <div className="card-header"><span className="eyebrow">Top Creators</span><h2>Recommended</h2></div>
+          <div className="card-header">
+            <span className="eyebrow">Top Creators</span>
+            <h2>Recommended</h2>
+            <button className="ghost-text-button" onClick={onRefreshCreators} type="button">Randomize</button>
+          </div>
           <div className="sidebar-list">
-            {analytics?.active_users?.slice(0, 4).map((user) => <SidebarUser key={user.user_id} user={user} onProfile={onOpenProfile} extra={`${user.post_count} posts`} />)}
+            {recommendedCreators.map((user) => <SidebarUser key={user.user_id} user={user} onProfile={onOpenProfile} extra={`${user.post_count} posts`} />)}
           </div>
         </section>
       </aside>
     </section>
   );
 }
-

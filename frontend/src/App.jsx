@@ -11,7 +11,6 @@ import SettingsPage from "./pages/SettingsPage";
 export default function App() {
   const {
     activeProfile,
-    analytics,
     browsingHistory,
     category,
     currentUser,
@@ -33,11 +32,14 @@ export default function App() {
     isOwnProfileRoute,
     isThreadOpen,
     loginForm,
+    logout,
     navigate,
     openHistoryPost,
     openPost,
     postForm,
+    recommendedCreators,
     registration,
+    refreshRecommendedCreators,
     selectedComments,
     selectedPost,
     setIsThreadOpen,
@@ -58,7 +60,6 @@ export default function App() {
       <main className="page-stage">
         {currentView === "home" ? (
           <HomePage
-            analytics={analytics}
             category={category}
             currentUser={currentUser}
             feed={feed}
@@ -69,7 +70,9 @@ export default function App() {
             onOpenPost={openPost}
             onOpenProfile={goUserPage}
             onOpenSelfProfile={goMyProfile}
+            onRefreshCreators={refreshRecommendedCreators}
             onSortChange={handleSortChange}
+            recommendedCreators={recommendedCreators}
             sortBy={sortBy}
             status={status}
           />

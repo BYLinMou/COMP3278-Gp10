@@ -20,6 +20,15 @@ import {
 import { blankLogin, blankPost, blankRegistration, blankSettings } from "../lib/constants";
 import { guestProfile, parseRoute, routeToPath } from "../lib/routes";
 
+function shuffleItems(items) {
+  const next = [...items];
+  for (let index = next.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
+  }
+  return next;
+}
+
 export function useAppController() {
   const [feed, setFeed] = useState([]);
   const [analytics, setAnalytics] = useState(null);
@@ -40,6 +49,7 @@ export function useAppController() {
   const [isThreadOpen, setIsThreadOpen] = useState(false);
   const [route, setRoute] = useState(() => parseRoute(window.location.pathname));
   const [browsingHistory, setBrowsingHistory] = useState([]);
+  const [recommendedCreators, setRecommendedCreators] = useState([]);
 
   const currentView = route.view === "user" ? "user" : route.view;
   const isOwnProfileRoute = route.view === "profile";
@@ -304,6 +314,27 @@ export function useAppController() {
     await refreshFeed(sortBy, nextCategory);
   }, [refreshFeed, sortBy]);
 
+  const refreshRecommendedCreators = useCallback(() => {
+    const rankedUsers = analytics?.active_users ?? [];
+    const seen = new Set(rankedUsers.map((user) => user.username));
+    const fallbackUsers = users
+      .filter((user) => !currentUser || user.username !== currentUser.username)
+      .filter((user) => !seen.has(user.username))
+      .map((user) => ({
+        user_id: user.id,
+        username: user.username,
+        display_name: user.display_name,
+        post_count: 0,
+      }));
+
+    const combined = [...shuffleItems(rankedUsers), ...shuffleItems(fallbackUsers)];
+    setRecommendedCreators(combined.slice(0, 4));
+  }, [analytics?.active_users, currentUser, users]);
+
+  useEffect(() => {
+    refreshRecommendedCreators();
+  }, [refreshRecommendedCreators]);
+
   const logout = useCallback(async () => {
     try {
       await logoutUser();
@@ -343,7 +374,9 @@ export function useAppController() {
     navigate,
     openHistoryPost,
     openPost,
+    logout,
     postForm,
+    recommendedCreators,
     registration,
     route,
     selectedComments,
@@ -357,6 +390,7 @@ export function useAppController() {
     sortBy,
     status,
     users,
+    refreshRecommendedCreators,
     goMyProfile,
     goUserPage,
   };
