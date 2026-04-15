@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import {
   createComment,
   createUploadedPost,
@@ -94,7 +94,7 @@ function CategoryTabs({ value, onChange }) {
   return <div className="category-tabs">{CATEGORIES.map((item) => <button key={item} className={`category-tab ${value === item ? "category-tab--active" : ""}`} onClick={() => onChange(item)} type="button">{item}</button>)}</div>;
 }
 
-function SidebarUser({ user, onProfile, extra }) {
+const SidebarUser = memo(function SidebarUser({ user, onProfile, extra }) {
   return (
     <button className="sidebar-user" onClick={() => onProfile(user.username)} type="button">
       <Avatar username={user.username} size="xs" />
@@ -102,9 +102,9 @@ function SidebarUser({ user, onProfile, extra }) {
       {extra ? <em>{extra}</em> : null}
     </button>
   );
-}
+});
 
-function PostCard({ post, currentUserId, onLike, onOpen, onProfile }) {
+const PostCard = memo(function PostCard({ post, currentUserId, onLike, onOpen, onProfile }) {
   const [mediaShape, setMediaShape] = useState("square");
 
   return (
@@ -113,6 +113,8 @@ function PostCard({ post, currentUserId, onLike, onOpen, onProfile }) {
         <img
           src={post.image_url}
           alt={post.description}
+          loading="lazy"
+          decoding="async"
           onLoad={(event) => {
             const { naturalWidth, naturalHeight } = event.currentTarget;
             if (!naturalWidth || !naturalHeight) {
@@ -154,7 +156,7 @@ function PostCard({ post, currentUserId, onLike, onOpen, onProfile }) {
       </div>
     </article>
   );
-}
+});
 
 function CommentList({ comments, onProfile }) {
   if (!comments.length) return <p className="muted-copy">No comments yet.</p>;
@@ -253,7 +255,7 @@ function ProfilePage({ profile, currentUser, onPostOpen, onNavigateHome, onNavig
         <section className="profile-post-grid">
           {profile.recent_posts.map((post) => (
             <button className="profile-post-card" key={post.id} onClick={() => onPostOpen(post)} type="button">
-              <img src={post.image_url} alt={post.description} />
+              <img src={post.image_url} alt={post.description} loading="lazy" decoding="async" />
               <span className="post-chip post-chip--overlay">{post.category}</span>
               <div className="profile-post-card__overlay">
                 <p>{post.description}</p>

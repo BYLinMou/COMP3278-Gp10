@@ -45,13 +45,13 @@ button { cursor: pointer; }
     linear-gradient(180deg, #121212 0%, #050505 100%);
 }
 .background-pattern {
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.14;
+  opacity: 0.08;
   background-image:
-    repeating-linear-gradient(45deg, transparent 0 20px, rgba(212, 175, 55, 0.08) 20px 21px),
-    repeating-linear-gradient(-45deg, transparent 0 20px, rgba(212, 175, 55, 0.08) 20px 21px);
+    repeating-linear-gradient(45deg, transparent 0 24px, rgba(212, 175, 55, 0.05) 24px 25px),
+    repeating-linear-gradient(-45deg, transparent 0 24px, rgba(212, 175, 55, 0.05) 24px 25px);
 }
 .app-topbar, .page-stage {
   position: relative;
@@ -69,7 +69,6 @@ button { cursor: pointer; }
   background: rgba(10, 10, 10, 0.9);
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
-  backdrop-filter: blur(16px);
 }
 .brand-block { display: grid; gap: 0.2rem; }
 .brand-block h1, .discovery-header h2, .card-header h2, .profile-hero__meta h2 {
@@ -141,6 +140,10 @@ button { cursor: pointer; }
   background: linear-gradient(180deg, var(--panel), var(--panel-soft));
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
+}
+.sidebar-card, .post-tile, .profile-post-card, .history-record {
+  content-visibility: auto;
+  contain-intrinsic-size: 320px;
 }
 .discovery-header, .sidebar-card { padding: 1rem 1.1rem; }
 .sidebar-card--wide { min-width: 0; }
@@ -281,6 +284,7 @@ button { cursor: pointer; }
   box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.06), 0 0 18px rgba(212, 175, 55, 0.08);
   transition: transform 300ms ease, border-color 300ms ease, box-shadow 300ms ease;
   position: relative;
+  contain: layout paint;
 }
 .post-tile:hover {
   transform: translateY(-4px);
@@ -323,12 +327,10 @@ button { cursor: pointer; }
   width: 100%;
   display: block;
   object-fit: cover;
-  transition: transform 500ms ease, filter 400ms ease;
-  filter: saturate(0.92) contrast(1.02);
+  transition: transform 350ms ease;
 }
 .post-tile:hover .post-tile__media img {
   transform: scale(1.03);
-  filter: saturate(1) contrast(1.05);
 }
 .post-tile__media--landscape img {
   height: clamp(190px, 18vw, 240px);
