@@ -1,4 +1,5 @@
 import Avatar from "../components/Avatar";
+import { useEffect } from "react";
 import CategoryTabs from "../components/CategoryTabs";
 import PostCard from "../components/PostCard";
 import SidebarUser from "../components/SidebarUser";
@@ -9,9 +10,12 @@ export default function HomePage({
   currentUser,
   feed,
   feedError,
+  hasMoreFeed,
   isFeedLoading,
+  isFeedLoadingMore,
   onCategoryChange,
   onLike,
+  onLoadMoreFeed,
   onOpenPost,
   onOpenProfile,
   onOpenSelfProfile,
@@ -20,7 +24,12 @@ export default function HomePage({
   recommendedCreators,
   sortBy,
   status,
+  syncVisibleFeedCount,
 }) {
+  useEffect(() => {
+    syncVisibleFeedCount(feed.length);
+  }, [feed.length, syncVisibleFeedCount]);
+
   return (
     <section className="page-grid">
       <section className="page-main">
@@ -61,9 +70,18 @@ export default function HomePage({
             <p>{feedError}</p>
           </section>
         ) : feed.length ? (
+          <>
           <div className="feed-waterfall">
             {feed.map((post) => <PostCard key={post.id} post={post} currentUserId={currentUser?.id} onLike={onLike} onOpen={onOpenPost} onProfile={onOpenProfile} />)}
           </div>
+          {hasMoreFeed ? (
+            <div className="feed-load-more">
+              <button className="ghost-frame-button" onClick={onLoadMoreFeed} type="button" disabled={isFeedLoadingMore}>
+                {isFeedLoadingMore ? "Loading..." : "Load More"}
+              </button>
+            </div>
+          ) : null}
+          </>
         ) : (
           <section className="feed-placeholder" role="status">
             <span className="eyebrow">No posts yet</span>

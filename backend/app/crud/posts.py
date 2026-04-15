@@ -14,7 +14,13 @@ def create_post(db: Session, payload: schemas.PostCreate) -> models.Post:
     return post
 
 
-def list_feed(db: Session, sort_by: str = "recent", category: str | None = None) -> list[schemas.PostRead]:
+def list_feed(
+    db: Session,
+    sort_by: str = "recent",
+    category: str | None = None,
+    limit: int = 9,
+    offset: int = 0,
+) -> list[schemas.PostRead]:
     like_count = func.count(func.distinct(models.Like.id)).label("like_count")
     comment_count = func.count(func.distinct(models.Comment.id)).label("comment_count")
 
@@ -45,6 +51,8 @@ def list_feed(db: Session, sort_by: str = "recent", category: str | None = None)
         query = query.order_by(desc(like_count), desc(models.Post.created_at))
     else:
         query = query.order_by(desc(models.Post.created_at))
+
+    query = query.limit(limit).offset(offset)
 
     rows = db.execute(query).all()
     posts = [schemas.PostRead.model_validate({**row._mapping, "recent_comments": []}) for row in rows]

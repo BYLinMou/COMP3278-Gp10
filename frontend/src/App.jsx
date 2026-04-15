@@ -18,6 +18,7 @@ export default function App() {
     currentView,
     feed,
     feedError,
+    hasMoreFeed,
     goMyProfile,
     goUserPage,
     handleCategoryChange,
@@ -32,10 +33,12 @@ export default function App() {
     handleUpdateProfile,
     isAnalyticsLoading,
     isFeedLoading,
+    isFeedLoadingMore,
     isOwnProfileRoute,
     isThreadOpen,
     loginForm,
     logout,
+    loadMoreFeed,
     navigate,
     openHistoryPost,
     openPost,
@@ -53,6 +56,7 @@ export default function App() {
     settingsForm,
     sortBy,
     status,
+    syncVisibleFeedCount,
     users,
   } = useAppController();
 
@@ -66,9 +70,12 @@ export default function App() {
             currentUser={currentUser}
             feed={feed}
             feedError={feedError}
+            hasMoreFeed={hasMoreFeed}
             isFeedLoading={isFeedLoading}
+            isFeedLoadingMore={isFeedLoadingMore}
             onCategoryChange={handleCategoryChange}
             onLike={handleLike}
+            onLoadMoreFeed={loadMoreFeed}
             onOpenPost={openPost}
             onOpenProfile={goUserPage}
             onOpenSelfProfile={goMyProfile}
@@ -77,6 +84,7 @@ export default function App() {
             recommendedCreators={recommendedCreators}
             sortBy={sortBy}
             status={status}
+            syncVisibleFeedCount={syncVisibleFeedCount}
           />
         ) : null}
 

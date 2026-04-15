@@ -1,11 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   createComment,
   createUploadedPost,
   createUser,
-  getAnalyticsOverview,
   getCurrentSession,
-  getFeed,
   getPost,
   getPostComments,
   getUserHistory,
@@ -18,6 +16,8 @@ import {
   toggleLike,
   updateUser,
 } from "../api";
+import { useAnalyticsController } from "./useAnalyticsController";
+import { useFeedController } from "./useFeedController";
 import { blankLogin, blankPost, blankRegistration, blankSettings } from "../lib/constants";
 import { guestProfile, parseRoute, routeToPath } from "../lib/routes";
 
@@ -31,19 +31,26 @@ function shuffleItems(items) {
 }
 
 export function useAppController() {
-  const [feed, setFeed] = useState([]);
-  const [analytics, setAnalytics] = useState(null);
+  const {
+    category,
+    feed,
+    feedError,
+    hasMoreFeed,
+    isFeedLoading,
+    isFeedLoadingMore,
+    loadMoreFeed,
+    refreshFeed,
+    resetFeed,
+    sortBy,
+    syncVisibleFeedCount,
+  } = useFeedController();
+  const { analytics, isAnalyticsLoading, loadAnalytics } = useAnalyticsController();
   const [users, setUsers] = useState([]);
-  const [sortBy, setSortBy] = useState("recent");
-  const [category, setCategory] = useState("All");
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedPost, setSelectedPost] = useState(null);
   const [selectedComments, setSelectedComments] = useState([]);
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [status, setStatus] = useState("Loading content...");
-  const [isFeedLoading, setIsFeedLoading] = useState(true);
-  const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
-  const [feedError, setFeedError] = useState("");
   const [registration, setRegistration] = useState(blankRegistration);
   const [loginForm, setLoginForm] = useState(blankLogin);
   const [settingsForm, setSettingsForm] = useState(blankSettings);
@@ -53,9 +60,6 @@ export function useAppController() {
   const [browsingHistory, setBrowsingHistory] = useState([]);
   const [recommendedCreators, setRecommendedCreators] = useState([]);
   const [followingUsernames, setFollowingUsernames] = useState([]);
-  const activeFeedRequestRef = useRef(0);
-  const sortByRef = useRef("recent");
-  const categoryRef = useRef("All");
 
   const currentView = route.view === "user" ? "user" : route.view;
   const isOwnProfileRoute = route.view === "profile";
@@ -74,49 +78,6 @@ export function useAppController() {
     const nextUsers = await getUsers();
     setUsers(nextUsers);
     return nextUsers;
-  }, []);
-
-  useEffect(() => {
-    sortByRef.current = sortBy;
-  }, [sortBy]);
-
-  useEffect(() => {
-    categoryRef.current = category;
-  }, [category]);
-
-  const refreshFeed = useCallback(async (nextSort = sortByRef.current, nextCategory = categoryRef.current) => {
-    const requestId = activeFeedRequestRef.current + 1;
-    activeFeedRequestRef.current = requestId;
-    setIsFeedLoading(true);
-    setFeedError("");
-    try {
-      const items = await getFeed(nextSort, nextCategory);
-      if (activeFeedRequestRef.current === requestId) {
-        setFeed(items);
-      }
-      return items;
-    } catch (error) {
-      if (activeFeedRequestRef.current === requestId) {
-        setFeed([]);
-        setFeedError(error.message);
-      }
-      throw error;
-    } finally {
-      if (activeFeedRequestRef.current === requestId) {
-        setIsFeedLoading(false);
-      }
-    }
-  }, []);
-
-  const loadAnalytics = useCallback(async () => {
-    setIsAnalyticsLoading(true);
-    try {
-      const overview = await getAnalyticsOverview();
-      setAnalytics(overview);
-      return overview;
-    } finally {
-      setIsAnalyticsLoading(false);
-    }
   }, []);
 
   const loadProfile = useCallback(async (username, viewerUserId = currentUser?.id) => {
@@ -198,14 +159,12 @@ export function useAppController() {
 
   useEffect(() => {
     async function bootstrap() {
-      const initialSort = sortByRef.current;
-      const initialCategory = categoryRef.current;
       try {
         if (route.view === "analytics") {
           await loadAnalytics();
           setStatus("Analytics ready.");
         } else {
-          await refreshFeed(initialSort, initialCategory);
+          await resetFeed(sortBy, category);
           setStatus("Browse first, then log in when you want to interact.");
         }
 
@@ -213,7 +172,7 @@ export function useAppController() {
           try {
             const followUpTasks = [refreshUsers()];
             if (route.view === "analytics") {
-              followUpTasks.push(refreshFeed(sortByRef.current, categoryRef.current));
+              followUpTasks.push(refreshFeed({ nextSort: sortBy, nextCategory: category }));
             } else {
               followUpTasks.push(loadAnalytics());
             }
@@ -235,7 +194,7 @@ export function useAppController() {
       }
     }
     bootstrap();
-  }, [loadAnalytics, refreshFeed, refreshUsers, route.view, setLoggedInUser]);
+  }, [loadAnalytics, refreshFeed, refreshUsers, resetFeed, route.view, setLoggedInUser]);
 
   useEffect(() => {
     function syncRoute() {
@@ -323,32 +282,40 @@ export function useAppController() {
         imageFile: postForm.imageFile,
       });
       setPostForm(blankPost);
-      await Promise.all([refreshFeed(sortBy, category), refreshUsers(), loadAnalytics(), loadProfile(currentUser.username)]);
+      await Promise.all([
+        refreshFeed({ nextSort: sortBy, nextCategory: category, limit: Math.max(feed.length, 9) }),
+        refreshUsers(),
+        loadAnalytics(),
+        loadProfile(currentUser.username),
+      ]);
       navigate({ view: "home" });
       setStatus("Post published.");
     } catch (error) {
       setStatus(error.message);
     }
-  }, [category, currentUser, loadAnalytics, loadProfile, navigate, postForm, refreshFeed, refreshUsers, sortBy]);
+  }, [category, currentUser, feed.length, loadAnalytics, loadProfile, navigate, postForm, refreshFeed, refreshUsers, sortBy]);
 
   const handleLike = useCallback(async (postId, userId) => {
     if (!userId) return setStatus("Log in to like posts.");
     try {
       await toggleLike(postId, userId);
-      await Promise.all([refreshFeed(sortBy, category), loadAnalytics()]);
+      await Promise.all([
+        refreshFeed({ nextSort: sortBy, nextCategory: category, limit: Math.max(feed.length, 9) }),
+        loadAnalytics(),
+      ]);
       if (route.view === "profile" && currentUser?.username) await loadProfile(currentUser.username);
       if (route.view === "user" && route.username) await loadProfile(route.username);
     } catch (error) {
       setStatus(error.message);
     }
-  }, [category, currentUser, loadAnalytics, loadProfile, refreshFeed, route.username, route.view, sortBy]);
+  }, [category, currentUser, feed.length, loadAnalytics, loadProfile, refreshFeed, route.username, route.view, sortBy]);
 
   const handleComment = useCallback(async (body, resetDraft) => {
     if (!currentUser || !selectedPost) return setStatus("Log in and open a post first.");
     try {
       await createComment(selectedPost.id, { user_id: currentUser.id, body });
       resetDraft();
-      const items = await refreshFeed(sortBy, category);
+      const items = await refreshFeed({ nextSort: sortBy, nextCategory: category, limit: Math.max(feed.length, 9) });
       await loadAnalytics();
       const updated = items.find((item) => item.id === selectedPost.id) ?? selectedPost;
       await openPost(updated);
@@ -356,19 +323,15 @@ export function useAppController() {
     } catch (error) {
       setStatus(error.message);
     }
-  }, [category, currentUser, loadAnalytics, openPost, refreshFeed, selectedPost, sortBy]);
+  }, [category, currentUser, feed.length, loadAnalytics, openPost, refreshFeed, selectedPost, sortBy]);
 
   const handleSortChange = useCallback(async (nextSort) => {
-    setSortBy(nextSort);
-    sortByRef.current = nextSort;
-    await refreshFeed(nextSort, categoryRef.current);
-  }, [refreshFeed]);
+    await resetFeed(nextSort, category);
+  }, [category, resetFeed]);
 
   const handleCategoryChange = useCallback(async (nextCategory) => {
-    setCategory(nextCategory);
-    categoryRef.current = nextCategory;
-    await refreshFeed(sortByRef.current, nextCategory);
-  }, [refreshFeed]);
+    await resetFeed(sortBy, nextCategory);
+  }, [resetFeed, sortBy]);
 
   const refreshRecommendedCreators = useCallback(() => {
     const rankedUsers = analytics?.active_users ?? [];
@@ -436,6 +399,7 @@ export function useAppController() {
     currentView,
     feed,
     feedError,
+    hasMoreFeed,
     followingUsernames,
     handleCategoryChange,
     handleComment,
@@ -449,6 +413,7 @@ export function useAppController() {
     handleUpdateProfile,
     isAnalyticsLoading,
     isFeedLoading,
+    isFeedLoadingMore,
     isOwnProfileRoute,
     isThreadOpen,
     loginForm,
@@ -456,6 +421,7 @@ export function useAppController() {
     openHistoryPost,
     openPost,
     logout,
+    loadMoreFeed,
     postForm,
     recommendedCreators,
     registration,
@@ -470,6 +436,7 @@ export function useAppController() {
     settingsForm,
     sortBy,
     status,
+    syncVisibleFeedCount,
     users,
     refreshRecommendedCreators,
     goMyProfile,

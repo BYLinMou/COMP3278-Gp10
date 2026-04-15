@@ -215,11 +215,16 @@ button { cursor: pointer; }
 }
 
 .feed-waterfall {
-  width: 100%;
-  max-width: 100%;
-  column-count: 3;
-  column-gap: 1rem;
-  overflow: hidden;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.feed-load-more {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 0 0;
 }
 
 .feed-placeholder h3 {
@@ -278,12 +283,10 @@ button { cursor: pointer; }
 }
 
 .post-tile {
-  break-inside: avoid;
-  display: inline-grid;
+  display: grid;
   width: 100%;
   min-width: 0;
   gap: 0.8rem;
-  margin-bottom: 1rem;
   padding: 0.85rem;
   background: #111111;
   border: 1px solid rgba(212, 175, 55, 0.18);
@@ -635,14 +638,14 @@ input:focus, textarea:focus, select:focus { border-bottom-color: var(--gold-stro
 .stat-board { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
 @media (max-width: 1180px) {
-  .feed-waterfall { column-count: 2; }
+  .feed-waterfall { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .profile-post-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (max-width: 980px) {
   .app-topbar, .page-grid, .profile-hero__head { grid-template-columns: 1fr; }
   .top-nav { justify-content: flex-start; }
-  .feed-waterfall { column-count: 2; }
+  .feed-waterfall { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .profile-post-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .profile-hero__stats, .stat-board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .profile-route-banner { grid-template-columns: 1fr; }
@@ -651,7 +654,7 @@ input:focus, textarea:focus, select:focus { border-bottom-color: var(--gold-stro
 
 @media (max-width: 640px) {
   .social-app-shell { padding: 0.7rem; }
-  .feed-waterfall { column-count: 1; }
+  .feed-waterfall { grid-template-columns: 1fr; }
   .post-tile { border-radius: 20px; }
   .profile-post-grid, .profile-hero__stats, .stat-board { grid-template-columns: 1fr; }
   .history-record--with-thumb { grid-template-columns: 1fr; }

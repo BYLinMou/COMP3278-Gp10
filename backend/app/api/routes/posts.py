@@ -12,9 +12,11 @@ router = APIRouter(tags=["posts"])
 def get_feed(
     sort_by: str = Query(default="recent", pattern="^(recent|popular)$"),
     category: str | None = Query(default=None),
+    limit: int = Query(default=9, ge=1, le=48),
+    offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
 ):
-    return crud.list_feed(db, sort_by=sort_by, category=category)
+    return crud.list_feed(db, sort_by=sort_by, category=category, limit=limit, offset=offset)
 
 
 @router.post("/posts", status_code=201)

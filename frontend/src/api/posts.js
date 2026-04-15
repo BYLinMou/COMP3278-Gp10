@@ -1,10 +1,13 @@
 import { buildApiUrl, request, requestWithoutJson } from "./client";
 
-export function getFeed(sortBy = "recent", category) {
+export function getFeed(sortBy = "recent", category, options = {}) {
+  const { limit = 9, offset = 0 } = options;
   const query = new URLSearchParams({ sort_by: sortBy });
   if (category && category !== "All") {
     query.set("category", category);
   }
+  query.set("limit", String(limit));
+  query.set("offset", String(offset));
   return request(`/feed?${query.toString()}`);
 }
 
@@ -53,4 +56,3 @@ export async function createUploadedPost({ userId, category, description, imageF
 
   return response.json();
 }
-
