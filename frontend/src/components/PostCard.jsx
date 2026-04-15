@@ -16,14 +16,15 @@ const PostCard = memo(function PostCard({ post, currentUserId, onLike, onOpen, o
           decoding="async"
           onLoad={(event) => {
             const { naturalWidth, naturalHeight } = event.currentTarget;
+            let nextShape = "square";
             if (!naturalWidth || !naturalHeight) {
-              setMediaShape("square");
+              setMediaShape((current) => (current === "square" ? current : "square"));
               return;
             }
             const ratio = naturalWidth / naturalHeight;
-            if (ratio >= 1.25) setMediaShape("landscape");
-            else if (ratio <= 0.82) setMediaShape("portrait");
-            else setMediaShape("square");
+            if (ratio >= 1.25) nextShape = "landscape";
+            else if (ratio <= 0.82) nextShape = "portrait";
+            setMediaShape((current) => (current === nextShape ? current : nextShape));
           }}
         />
         <span className="post-chip post-chip--overlay">{post.category}</span>
@@ -58,4 +59,3 @@ const PostCard = memo(function PostCard({ post, currentUserId, onLike, onOpen, o
 });
 
 export default PostCard;
-

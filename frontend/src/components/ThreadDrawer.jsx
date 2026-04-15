@@ -1,8 +1,15 @@
+import { memo, useEffect, useState } from "react";
 import Avatar from "./Avatar";
 import CommentList from "./CommentList";
 import { formatDate } from "../lib/format";
 
-export default function ThreadDrawer({ currentUser, post, comments, commentBody, setCommentBody, onComment, onClose, onProfile }) {
+const ThreadDrawer = memo(function ThreadDrawer({ currentUser, post, comments, onComment, onClose, onProfile }) {
+  const [draft, setDraft] = useState("");
+
+  useEffect(() => {
+    setDraft("");
+  }, [post?.id]);
+
   if (!post) return null;
   return (
     <div className="thread-overlay" onClick={onClose}>
@@ -28,10 +35,16 @@ export default function ThreadDrawer({ currentUser, post, comments, commentBody,
           <div className="thread-post-stats"><span>{post.like_count} likes</span><span>{post.comment_count} comments</span></div>
         </div>
         <p className="thread-body">{post.description}</p>
-        <form className="stack-form thread-form" onSubmit={onComment}>
+        <form
+          className="stack-form thread-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onComment(draft, () => setDraft(""));
+          }}
+        >
           <label>
             Add Comment
-            <textarea value={commentBody} onChange={(event) => setCommentBody(event.target.value)} placeholder={currentUser ? "Write something thoughtful..." : "Log in to comment"} disabled={!currentUser} required />
+            <textarea value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={currentUser ? "Write something thoughtful..." : "Log in to comment"} disabled={!currentUser} required />
           </label>
           <button className="primary-pill-button" type="submit" disabled={!currentUser}>Post Comment</button>
         </form>
@@ -39,4 +52,6 @@ export default function ThreadDrawer({ currentUser, post, comments, commentBody,
       </aside>
     </div>
   );
-}
+});
+
+export default ThreadDrawer;

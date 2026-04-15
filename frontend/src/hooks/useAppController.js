@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   createComment,
   createUploadedPost,
@@ -37,7 +37,6 @@ export function useAppController() {
   const [loginForm, setLoginForm] = useState(blankLogin);
   const [settingsForm, setSettingsForm] = useState(blankSettings);
   const [postForm, setPostForm] = useState(blankPost);
-  const [commentBody, setCommentBody] = useState("");
   const [isThreadOpen, setIsThreadOpen] = useState(false);
   const [route, setRoute] = useState(() => parseRoute(window.location.pathname));
   const [browsingHistory, setBrowsingHistory] = useState([]);
@@ -46,22 +45,22 @@ export function useAppController() {
   const isOwnProfileRoute = route.view === "profile";
   const activeProfile = isOwnProfileRoute ? (selectedProfile ?? guestProfile) : route.view === "user" ? selectedProfile : null;
 
-  function navigate(nextRoute) {
+  const navigate = useCallback((nextRoute) => {
     const normalized = typeof nextRoute === "string" ? parseRoute(nextRoute) : nextRoute;
     const nextPath = typeof nextRoute === "string" ? nextRoute : routeToPath(normalized);
     if (window.location.pathname !== nextPath) {
       window.history.pushState({}, "", nextPath);
     }
     setRoute(normalized);
-  }
+  }, []);
 
-  async function refreshUsers() {
+  const refreshUsers = useCallback(async () => {
     const nextUsers = await getUsers();
     setUsers(nextUsers);
     return nextUsers;
-  }
+  }, []);
 
-  async function refreshFeed(nextSort = sortBy, nextCategory = category) {
+  const refreshFeed = useCallback(async (nextSort = sortBy, nextCategory = category) => {
     setIsFeedLoading(true);
     setFeedError("");
     try {
@@ -75,25 +74,25 @@ export function useAppController() {
     } finally {
       setIsFeedLoading(false);
     }
-  }
+  }, [category, sortBy]);
 
-  async function loadAnalytics() {
+  const loadAnalytics = useCallback(async () => {
     const overview = await getAnalyticsOverview();
     setAnalytics(overview);
-  }
+  }, []);
 
-  async function loadProfile(username) {
+  const loadProfile = useCallback(async (username) => {
     const profile = await getUserProfile(username);
     setSelectedProfile(profile);
     return profile;
-  }
+  }, []);
 
-  async function loadHistory(username) {
+  const loadHistory = useCallback(async (username) => {
     const history = await getUserHistory(username);
     setBrowsingHistory(history);
-  }
+  }, []);
 
-  async function goUserPage(username) {
+  const goUserPage = useCallback(async (username) => {
     try {
       await loadProfile(username);
       navigate({ view: "user", username });
@@ -102,9 +101,9 @@ export function useAppController() {
     } catch (error) {
       setStatus(error.message);
     }
-  }
+  }, [loadProfile, navigate]);
 
-  async function goMyProfile() {
+  const goMyProfile = useCallback(async () => {
     setIsThreadOpen(false);
     if (currentUser?.username) {
       try {
@@ -117,25 +116,25 @@ export function useAppController() {
     }
     navigate({ view: "profile" });
     setStatus(currentUser ? `Viewing your profile, @${currentUser.username}` : "Browsing the guest profile.");
-  }
+  }, [currentUser, loadProfile, navigate]);
 
-  async function setLoggedInUser(user) {
+  const setLoggedInUser = useCallback(async (user) => {
     setCurrentUser(user);
     setLoginForm({ username: user.username, password: "" });
     setSettingsForm({ display_name: user.display_name, bio: user.bio ?? "", password: "" });
     await loadProfile(user.username);
     await loadHistory(user.username);
-  }
+  }, [loadHistory, loadProfile]);
 
-  async function handleNavChange(nextView) {
+  const handleNavChange = useCallback(async (nextView) => {
     if (nextView === "profile") {
       await goMyProfile();
       return;
     }
     navigate({ view: nextView });
-  }
+  }, [goMyProfile, navigate]);
 
-  async function openPost(post) {
+  const openPost = useCallback(async (post) => {
     const comments = await getPostComments(post.id);
     setSelectedPost(post);
     setSelectedComments(comments);
@@ -144,9 +143,9 @@ export function useAppController() {
       await recordPostView(post.id, currentUser.id);
       await loadHistory(currentUser.username);
     }
-  }
+  }, [currentUser, loadHistory]);
 
-  async function openHistoryPost(postId) {
+  const openHistoryPost = useCallback(async (postId) => {
     try {
       const post = await getPost(postId);
       await openPost(post);
@@ -154,7 +153,7 @@ export function useAppController() {
     } catch (error) {
       setStatus(error.message);
     }
-  }
+  }, [openPost]);
 
   useEffect(() => {
     async function bootstrap() {
@@ -208,7 +207,7 @@ export function useAppController() {
     syncProfileRoute();
   }, [route.view, route.username, currentUser?.username]);
 
-  async function handleLogin(event) {
+  const handleLogin = useCallback(async (event) => {
     event.preventDefault();
     try {
       const user = await loginUser(loginForm.username, loginForm.password);
@@ -218,9 +217,9 @@ export function useAppController() {
     } catch (error) {
       setStatus(error.message);
     }
-  }
+  }, [loginForm.password, loginForm.username, navigate, setLoggedInUser]);
 
-  async function handleRegister(event) {
+  const handleRegister = useCallback(async (event) => {
     event.preventDefault();
     try {
       await createUser(registration);
@@ -233,9 +232,9 @@ export function useAppController() {
     } catch (error) {
       setStatus(error.message);
     }
-  }
+  }, [loadAnalytics, navigate, refreshUsers, registration, setLoggedInUser]);
 
-  async function handleUpdateProfile(event) {
+  const handleUpdateProfile = useCallback(async (event) => {
     event.preventDefault();
     if (!currentUser) return setStatus("Log in first.");
     try {
@@ -246,9 +245,9 @@ export function useAppController() {
     } catch (error) {
       setStatus(error.message);
     }
-  }
+  }, [currentUser, refreshUsers, setLoggedInUser, settingsForm]);
 
-  async function handleCreatePost(event) {
+  const handleCreatePost = useCallback(async (event) => {
     event.preventDefault();
     if (!currentUser) return setStatus("Log in before publishing.");
     if (!postForm.imageFile) return setStatus("Choose an image first.");
@@ -266,9 +265,9 @@ export function useAppController() {
     } catch (error) {
       setStatus(error.message);
     }
-  }
+  }, [category, currentUser, loadAnalytics, loadProfile, navigate, postForm, refreshFeed, refreshUsers, sortBy]);
 
-  async function handleLike(postId, userId) {
+  const handleLike = useCallback(async (postId, userId) => {
     if (!userId) return setStatus("Log in to like posts.");
     try {
       await toggleLike(postId, userId);
@@ -278,14 +277,13 @@ export function useAppController() {
     } catch (error) {
       setStatus(error.message);
     }
-  }
+  }, [category, currentUser, loadAnalytics, loadProfile, refreshFeed, route.username, route.view, sortBy]);
 
-  async function handleComment(event) {
-    event.preventDefault();
+  const handleComment = useCallback(async (body, resetDraft) => {
     if (!currentUser || !selectedPost) return setStatus("Log in and open a post first.");
     try {
-      await createComment(selectedPost.id, { user_id: currentUser.id, body: commentBody });
-      setCommentBody("");
+      await createComment(selectedPost.id, { user_id: currentUser.id, body });
+      resetDraft();
       const items = await refreshFeed(sortBy, category);
       await loadAnalytics();
       const updated = items.find((item) => item.id === selectedPost.id) ?? selectedPost;
@@ -294,19 +292,19 @@ export function useAppController() {
     } catch (error) {
       setStatus(error.message);
     }
-  }
+  }, [category, currentUser, loadAnalytics, openPost, refreshFeed, selectedPost, sortBy]);
 
-  async function handleSortChange(nextSort) {
+  const handleSortChange = useCallback(async (nextSort) => {
     setSortBy(nextSort);
     await refreshFeed(nextSort, category);
-  }
+  }, [category, refreshFeed]);
 
-  async function handleCategoryChange(nextCategory) {
+  const handleCategoryChange = useCallback(async (nextCategory) => {
     setCategory(nextCategory);
     await refreshFeed(sortBy, nextCategory);
-  }
+  }, [refreshFeed, sortBy]);
 
-  async function logout() {
+  const logout = useCallback(async () => {
     try {
       await logoutUser();
     } catch (error) {
@@ -318,14 +316,13 @@ export function useAppController() {
       navigate({ view: "home" });
       setStatus("Logged out.");
     }
-  }
+  }, [navigate]);
 
   return {
     activeProfile,
     analytics,
     browsingHistory,
     category,
-    commentBody,
     currentUser,
     currentView,
     feed,
@@ -351,7 +348,6 @@ export function useAppController() {
     route,
     selectedComments,
     selectedPost,
-    setCommentBody,
     setIsThreadOpen,
     setLoginForm,
     setPostForm,
@@ -363,7 +359,5 @@ export function useAppController() {
     users,
     goMyProfile,
     goUserPage,
-    setIsThreadOpen,
   };
 }
-

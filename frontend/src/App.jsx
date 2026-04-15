@@ -14,7 +14,6 @@ export default function App() {
     analytics,
     browsingHistory,
     category,
-    commentBody,
     currentUser,
     currentView,
     feed,
@@ -41,7 +40,6 @@ export default function App() {
     registration,
     selectedComments,
     selectedPost,
-    setCommentBody,
     setIsThreadOpen,
     setLoginForm,
     setPostForm,
@@ -118,7 +116,7 @@ export default function App() {
           />
         ) : null}
       </main>
-      <ThreadDrawer currentUser={currentUser} post={isThreadOpen ? selectedPost : null} comments={selectedComments} commentBody={commentBody} setCommentBody={setCommentBody} onComment={handleComment} onClose={() => setIsThreadOpen(false)} onProfile={goUserPage} />
+      <ThreadDrawer currentUser={currentUser} post={isThreadOpen ? selectedPost : null} comments={selectedComments} onComment={handleComment} onClose={() => setIsThreadOpen(false)} onProfile={goUserPage} />
     </div>
   );
 }
