@@ -10,3 +10,4 @@ node_modules/
 backend/uploads/
 *.db
 tmp/
+.claude/

@@ -245,6 +245,8 @@ export default function App() {
   const [selectedComments, setSelectedComments] = useState([]);
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [status, setStatus] = useState("Loading content...");
+  const [isFeedLoading, setIsFeedLoading] = useState(true);
+  const [feedError, setFeedError] = useState("");
   const [registration, setRegistration] = useState(blankRegistration);
   const [loginForm, setLoginForm] = useState(blankLogin);
   const [settingsForm, setSettingsForm] = useState(blankSettings);
@@ -261,9 +263,19 @@ export default function App() {
   }
 
   async function refreshFeed(nextSort = sortBy, nextCategory = category) {
-    const items = await getFeed(nextSort, nextCategory);
-    setFeed(items);
-    return items;
+    setIsFeedLoading(true);
+    setFeedError("");
+    try {
+      const items = await getFeed(nextSort, nextCategory);
+      setFeed(items);
+      return items;
+    } catch (error) {
+      setFeed([]);
+      setFeedError(error.message);
+      throw error;
+    } finally {
+      setIsFeedLoading(false);
+    }
   }
 
   async function loadAnalytics() {
@@ -456,9 +468,41 @@ export default function App() {
                 </div>
               </section>
               <CategoryTabs value={category} onChange={async (value) => { setCategory(value); await refreshFeed(sortBy, value); }} />
-              <div className="feed-waterfall">
-                {feed.map((post) => <PostCard key={post.id} post={post} currentUserId={currentUser?.id} onLike={handleLike} onOpen={openPost} onProfile={goProfile} />)}
-              </div>
+              {isFeedLoading ? (
+                <section className="feed-placeholder" aria-live="polite">
+                  <div className="feed-placeholder__header">
+                    <span className="eyebrow">Loading</span>
+                    <h3>Preparing your feed</h3>
+                    <p className="muted-copy">Fetching the latest posts and creators...</p>
+                  </div>
+                  <div className="feed-placeholder-grid">
+                    {[0, 1, 2].map((item) => (
+                      <article className="feed-skeleton-card" key={item} aria-hidden="true">
+                        <div className="feed-skeleton-card__media" />
+                        <div className="feed-skeleton-card__line feed-skeleton-card__line--short" />
+                        <div className="feed-skeleton-card__line" />
+                        <div className="feed-skeleton-card__line feed-skeleton-card__line--muted" />
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              ) : feedError ? (
+                <section className="feed-placeholder feed-placeholder--error" role="status">
+                  <span className="eyebrow">Feed unavailable</span>
+                  <h3>We could not load the homepage.</h3>
+                  <p>{feedError}</p>
+                </section>
+              ) : feed.length ? (
+                <div className="feed-waterfall">
+                  {feed.map((post) => <PostCard key={post.id} post={post} currentUserId={currentUser?.id} onLike={handleLike} onOpen={openPost} onProfile={goProfile} />)}
+                </div>
+              ) : (
+                <section className="feed-placeholder" role="status">
+                  <span className="eyebrow">No posts yet</span>
+                  <h3>Your feed is ready for the first story.</h3>
+                  <p className="muted-copy">Try a different category or come back after someone shares a new moment.</p>
+                </section>
+              )}
             </section>
             <aside className="page-side">
               <section className="sidebar-card">
