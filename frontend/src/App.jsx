@@ -3,6 +3,7 @@ import {
   createComment,
   createUploadedPost,
   createUser,
+  getAnalyticsOverview,
   getFeed,
   getPostComments,
   getUserHistory,
@@ -42,6 +43,7 @@ const blankSettings = {
 const NAV_ITEMS = [
   { id: "home", label: "Home" },
   { id: "create", label: "Create" },
+  { id: "analytics", label: "Analytics" },
   { id: "history", label: "History" },
   { id: "settings", label: "Settings" },
 ];
@@ -299,6 +301,7 @@ function TopNav({ currentView, onChange, currentUser, onLogout }) {
 
 export default function App() {
   const [feed, setFeed] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
   const [users, setUsers] = useState([]);
   const [sortBy, setSortBy] = useState("recent");
   const [currentUser, setCurrentUser] = useState(null);
@@ -331,6 +334,12 @@ export default function App() {
       }
     }
     return items;
+  }
+
+  async function loadAnalytics() {
+    const overview = await getAnalyticsOverview();
+    setAnalytics(overview);
+    return overview;
   }
 
   async function loadProfile(username) {
@@ -388,6 +397,7 @@ export default function App() {
           refreshUsers(),
           refreshFeed("recent"),
         ]);
+        await loadAnalytics();
 
         const savedUsername = localStorage.getItem(SESSION_KEY);
         if (savedUsername) {
@@ -429,6 +439,7 @@ export default function App() {
     try {
       const user = await createUser(registration);
       await refreshUsers();
+      await loadAnalytics();
       await setLoggedInUser(user);
       setRegistration(blankRegistration);
       setCurrentView("home");
@@ -449,6 +460,7 @@ export default function App() {
       const updated = await updateUser(currentUser.username, settingsForm);
       await setLoggedInUser(updated);
       await refreshUsers();
+      await loadAnalytics();
       setStatus("Profile updated.");
     } catch (error) {
       setStatus(error.message);
@@ -475,6 +487,7 @@ export default function App() {
       setPostForm(blankPost);
       const items = await refreshFeed(sortBy);
       await refreshUsers();
+      await loadAnalytics();
       await loadProfile(currentUser.username);
       setCurrentView("home");
       if (items.length) {
@@ -495,6 +508,7 @@ export default function App() {
     try {
       await toggleLike(postId, userId);
       const items = await refreshFeed(sortBy);
+      await loadAnalytics();
       const target = items.find((post) => post.id === postId);
       if (target && isThreadOpen) {
         await openPost(target);
@@ -521,6 +535,7 @@ export default function App() {
       });
       setCommentBody("");
       const items = await refreshFeed(sortBy);
+      await loadAnalytics();
       const target = items.find((post) => post.id === selectedPost.id) ?? selectedPost;
       await openPost(target);
       setStatus("Comment published.");
@@ -624,6 +639,92 @@ export default function App() {
                 onSubmit={handleCreatePost}
               />
             </section>
+          </section>
+        ) : null}
+
+        {currentView === "analytics" ? (
+          <section className="page-grid">
+            <section className="page-main">
+              <section className="app-card">
+                <div className="card-header">
+                  <span className="eyebrow">Analytics</span>
+                  <h2>Salon Metrics</h2>
+                </div>
+                {analytics ? (
+                  <div className="profile-stats">
+                    <span>Users {analytics.total_users}</span>
+                    <span>Posts {analytics.total_posts}</span>
+                    <span>Comments {analytics.total_comments}</span>
+                    <span>Likes {analytics.total_likes}</span>
+                  </div>
+                ) : (
+                  <p className="muted-copy">Loading platform analytics.</p>
+                )}
+              </section>
+
+              <section className="app-card">
+                <div className="card-header">
+                  <span className="eyebrow">Leaders</span>
+                  <h2>Most Liked Posts</h2>
+                </div>
+                {analytics?.top_posts?.length ? (
+                  <div className="history-list">
+                    {analytics.top_posts.map((post) => (
+                      <article key={post.post_id} className="history-record">
+                        <strong>
+                          {post.display_name} <span className="muted-copy">@{post.username}</span>
+                        </strong>
+                        <span>{post.description}</span>
+                        <time>
+                          Likes {post.like_count} | Comments {post.comment_count}
+                        </time>
+                        <button
+                          className="inline-thread-link"
+                          onClick={() => {
+                            const feedPost = feed.find((item) => item.id === post.post_id);
+                            if (feedPost) {
+                              setCurrentView("home");
+                              openPost(feedPost);
+                            } else {
+                              setCurrentView("home");
+                            }
+                          }}
+                        >
+                          Open Post
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="muted-copy">No post analytics available yet.</p>
+                )}
+              </section>
+            </section>
+
+            <aside className="page-side">
+              <section className="app-card">
+                <div className="card-header">
+                  <span className="eyebrow">Creators</span>
+                  <h2>Most Active Users</h2>
+                </div>
+                {analytics?.active_users?.length ? (
+                  <div className="history-list">
+                    {analytics.active_users.map((user) => (
+                      <article key={user.user_id} className="history-record">
+                        <strong>{user.display_name}</strong>
+                        <span>@{user.username}</span>
+                        <time>
+                          Posts {user.post_count} | Likes {user.total_likes_received} | Comments{" "}
+                          {user.total_comments_received}
+                        </time>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="muted-copy">No creator analytics available yet.</p>
+                )}
+              </section>
+            </aside>
           </section>
         ) : null}
 

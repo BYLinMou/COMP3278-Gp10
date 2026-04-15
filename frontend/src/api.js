@@ -21,6 +21,10 @@ export function getFeed(sortBy = "recent") {
   return request(`/feed?sort_by=${sortBy}`);
 }
 
+export function getAnalyticsOverview() {
+  return request("/analytics/overview");
+}
+
 export function createUser(payload) {
   return request("/users", {
     method: "POST",

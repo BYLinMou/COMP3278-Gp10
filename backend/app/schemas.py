@@ -116,3 +116,31 @@ class ViewHistoryRead(BaseModel):
     display_name: str
     description: str
     image_url: str
+
+
+class TopPostStat(BaseModel):
+    post_id: int
+    username: str
+    display_name: str
+    description: str
+    image_url: str
+    like_count: int
+    comment_count: int
+
+
+class ActiveUserStat(BaseModel):
+    user_id: int
+    username: str
+    display_name: str
+    post_count: int
+    total_likes_received: int
+    total_comments_received: int
+
+
+class AnalyticsOverview(BaseModel):
+    total_users: int
+    total_posts: int
+    total_comments: int
+    total_likes: int
+    top_posts: list[TopPostStat]
+    active_users: list[ActiveUserStat]

@@ -218,6 +218,11 @@ def get_user_history(username: str, db: Session = Depends(get_db)):
     return crud.list_user_history(db, username)
 
 
+@app.get("/analytics/overview", response_model=schemas.AnalyticsOverview)
+def get_analytics_overview(db: Session = Depends(get_db)):
+    return crud.get_analytics_overview(db)
+
+
 @app.post("/query/sql", response_model=schemas.SqlQueryResponse)
 def run_sql_query(payload: schemas.SqlQueryRequest, db: Session = Depends(get_db)):
     try:
