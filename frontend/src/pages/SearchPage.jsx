@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { compareSearchMethods } from "../api";
+import { useEffect, useState } from "react";
+import { compareSearchMethods, getPopularKeywords } from "../api";
 
 const DEFAULT_QUERY = "campus";
 
@@ -59,14 +59,38 @@ function SearchResults({ comparison }) {
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
+  const [popularKeywords, setPopularKeywords] = useState([]);
+  const [selectedKeywords, setSelectedKeywords] = useState([]);
   const [comparison, setComparison] = useState(null);
   const [status, setStatus] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    async function loadPopularKeywords() {
+      try {
+        setPopularKeywords(await getPopularKeywords());
+      } catch {
+        setPopularKeywords([]);
+      }
+    }
+    loadPopularKeywords();
+  }, []);
+
+  function buildSearchQuery() {
+    return [...selectedKeywords, query.trim()].filter(Boolean).join(" ");
+  }
+
+  function toggleKeyword(keyword) {
+    setSelectedKeywords((current) => {
+      if (current.includes(keyword)) return current.filter((item) => item !== keyword);
+      return [...current, keyword];
+    });
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
-    const trimmedQuery = query.trim();
-    if (!trimmedQuery) {
+    const searchQuery = buildSearchQuery();
+    if (!searchQuery) {
       setStatus("Enter a keyword first.");
       return;
     }
@@ -74,7 +98,7 @@ export default function SearchPage() {
     setIsLoading(true);
     setStatus("Searching...");
     try {
-      const nextComparison = await compareSearchMethods(trimmedQuery);
+      const nextComparison = await compareSearchMethods(searchQuery);
       setComparison(nextComparison);
       const resultCount = mergeSearchRows(nextComparison).length;
       setStatus(resultCount ? `${resultCount} results found for "${nextComparison.query}".` : `No results found for "${nextComparison.query}".`);
@@ -88,18 +112,43 @@ export default function SearchPage() {
   return (
     <section className="search-lab">
       <section className="discovery-header search-lab__hero">
-        <div>
+        <div className="search-lab__heading">
           <span className="eyebrow">Discover</span>
           <h2>Search</h2>
         </div>
         <form className="search-lab__form" onSubmit={handleSubmit}>
           <label>
             Search
-            <textarea value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Try "${DEFAULT_QUERY}", "travel", "cafe", or describe what you want to find...`} />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Try "${DEFAULT_QUERY}", "travel", or "cafe"...`} />
           </label>
           <button className="ghost-frame-button" disabled={isLoading} type="submit">{isLoading ? "Searching" : "Search"}</button>
         </form>
       </section>
+
+      {popularKeywords.length ? (
+        <section className="search-keyword-panel" aria-label="Popular search keywords">
+          <div className="search-keyword-panel__head">
+            <span className="eyebrow">Popular</span>
+            <p className="muted-copy">Choose one or more keywords.</p>
+          </div>
+          <div className="search-keyword-list">
+            {popularKeywords.map((item) => {
+              const isSelected = selectedKeywords.includes(item.keyword);
+              return (
+                <button
+                  className={`search-keyword-chip ${isSelected ? "search-keyword-chip--active" : ""}`}
+                  key={item.keyword}
+                  onClick={() => toggleKeyword(item.keyword)}
+                  type="button"
+                  aria-pressed={isSelected}
+                >
+                  {item.keyword}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       {status ? <p className="search-status" role="status" aria-live="polite">{status}</p> : null}
 

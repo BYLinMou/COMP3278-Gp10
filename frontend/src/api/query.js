@@ -6,3 +6,7 @@ export function compareSearchMethods(query) {
     body: JSON.stringify({ query }),
   });
 }
+
+export function getPopularKeywords() {
+  return request("/query/popular-keywords");
+}

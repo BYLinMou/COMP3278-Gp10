@@ -8,6 +8,7 @@ from app.query_engine import (
     build_search_prompt,
     execute_read_only_sql,
     execute_full_text_search,
+    list_popular_search_keywords,
     list_supported_questions,
     text_to_sql,
 )
@@ -46,6 +47,11 @@ def run_text_to_sql_query(payload: schemas.TextToSqlRequest, db: Session = Depen
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/popular-keywords", response_model=list[schemas.PopularKeyword])
+def get_popular_keywords(db: Session = Depends(get_db)):
+    return list_popular_search_keywords(db)
 
 
 @router.post("/search-comparison", response_model=schemas.SearchComparisonResponse)

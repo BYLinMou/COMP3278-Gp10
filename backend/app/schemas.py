@@ -114,6 +114,11 @@ class SearchComparisonResponse(BaseModel):
     notes: list[str]
 
 
+class PopularKeyword(BaseModel):
+    keyword: str
+    result_count: int
+
+
 class UserProfileStats(BaseModel):
     post_count: int
     total_likes_received: int

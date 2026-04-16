@@ -95,6 +95,21 @@ LIKE_SEARCH_SQL = """
     LIMIT 10
 """
 
+POPULAR_KEYWORD_CANDIDATES = [
+    "campus",
+    "travel",
+    "cafe",
+    "fashion",
+    "nightlife",
+    "photography",
+    "inspiration",
+    "studio",
+    "library",
+    "coffee",
+    "rain",
+    "city",
+]
+
 
 def list_supported_questions() -> list[dict[str, str]]:
     return [
@@ -314,3 +329,14 @@ def execute_full_text_search(db: Session, search_text: str) -> tuple[str, dict[s
             {"like_term": f"%{normalized_search.lower()}%"},
         )
         return LIKE_SEARCH_SQL, result, True
+
+
+def list_popular_search_keywords(db: Session, limit: int = 8) -> list[dict[str, int | str]]:
+    ranked_keywords = []
+    for keyword in POPULAR_KEYWORD_CANDIDATES:
+        _, result, _ = execute_full_text_search(db, keyword)
+        if result["row_count"]:
+            ranked_keywords.append({"keyword": keyword, "result_count": result["row_count"]})
+
+    ranked_keywords.sort(key=lambda item: (-int(item["result_count"]), str(item["keyword"])))
+    return ranked_keywords[:limit]
