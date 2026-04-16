@@ -116,7 +116,7 @@ export default function App() {
         ) : null}
 
         {currentView === "search" ? (
-          <SearchPage />
+          <SearchPage currentUser={currentUser} onLike={handleLike} onOpenPost={openPost} onOpenProfile={goUserPage} />
         ) : null}
 
         {currentView === "settings" ? (
