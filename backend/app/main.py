@@ -8,6 +8,7 @@ from app.api.routes import (
     posts_router,
     query_router,
     users_router,
+    notifications_router,
 )
 from app.config import get_settings
 from app.services.bootstrap import initialize_database
@@ -43,3 +44,4 @@ app.include_router(users_router)
 app.include_router(posts_router)
 app.include_router(analytics_router)
 app.include_router(query_router)
+app.include_router(notifications_router)

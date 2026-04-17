@@ -1,6 +1,7 @@
 import Avatar from "./Avatar";
 import { NAV_ITEMS } from "../lib/constants";
 import { icons } from "../lib/icons";
+import NotificationButton from "./NotificationButton";
 
 export default function TopNav({ currentView, onChange, currentUser, onProfile, onLogout }) {
   return (
@@ -20,6 +21,7 @@ export default function TopNav({ currentView, onChange, currentUser, onProfile, 
       <div className="topbar-user">
         {currentUser ? (
           <>
+            <NotificationButton currentUser={currentUser} onProfile={onProfile} />
             <button className="user-chip" onClick={() => onProfile(currentUser.username)} type="button">
               <Avatar username={currentUser.username} size="xs" />
               <span>{currentUser.display_name}</span>
