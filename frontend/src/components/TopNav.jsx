@@ -2,7 +2,7 @@ import Avatar from "./Avatar";
 import { NAV_ITEMS } from "../lib/constants";
 import { icons } from "../lib/icons";
 
-export default function TopNav({ currentView, onChange, currentUser, onProfile, onLogout }) {
+export default function TopNav({ currentView, onChange, currentUser, onProfile, onLogout, onToggleTheme, theme }) {
   return (
     <header className="app-topbar">
       <div className="brand-block">
@@ -18,6 +18,15 @@ export default function TopNav({ currentView, onChange, currentUser, onProfile, 
         ))}
       </nav>
       <div className="topbar-user">
+        <button 
+          className="ghost-text-button" 
+          onClick={onToggleTheme} 
+          type="button" 
+          style={{ width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
+          title="Toggle Theme"
+        >
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
         {currentUser ? (
           <>
             <button className="user-chip" onClick={() => onProfile(currentUser.username)} type="button">
