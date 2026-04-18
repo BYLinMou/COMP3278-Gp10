@@ -154,7 +154,6 @@ button { cursor: pointer; }
 .theme-toggle-button:hover,
 .theme-toggle-button:focus-visible {
   color: var(--gold-strong);
-  border-color: var(--gold);
   background: rgba(212, 175, 55, 0.08);
   box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
   outline: none;
