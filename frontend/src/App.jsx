@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import ThreadDrawer from "./components/ThreadDrawer";
 import TopNav from "./components/TopNav";
 import { useAppController } from "./hooks/useAppController";
@@ -10,6 +11,19 @@ import SearchPage from "./pages/SearchPage";
 import SettingsPage from "./pages/SettingsPage";
 
 export default function App() {
+  const [theme, setTheme] = useState(
+    () => localStorage.getItem("theme") || "dark"
+  );
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
+
   const {
     activeProfile,
     analytics,
@@ -64,7 +78,7 @@ export default function App() {
 
   return (
     <div className="social-app-shell">
-      <TopNav currentView={currentView === "user" ? "" : currentView} onChange={handleNavChange} currentUser={currentUser} onProfile={goMyProfile} onLogout={logout} />
+      <TopNav currentView={currentView === "user" ? "" : currentView} onChange={handleNavChange} currentUser={currentUser} onProfile={goMyProfile} onLogout={logout} onToggleTheme={toggleTheme} theme={theme} />
       <main className="page-stage">
         {currentView === "home" ? (
           <HomePage

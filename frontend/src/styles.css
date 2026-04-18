@@ -1,15 +1,31 @@
-:root {
-  --bg: #080808;
-  --panel: #111111;
-  --panel-soft: #141414;
+:root, :root[data-theme='dark'] {
+  --bg: #0a0a0a;
+  --panel: #141414;
+  --panel-soft: #1c1c1c;
   --fg: #f2f0e4;
-  --muted: #9f9885;
+  --muted: #888888;
   --gold: #d4af37;
   --gold-soft: rgba(212, 175, 55, 0.22);
   --gold-strong: #f2e8c4;
-  --border: rgba(212, 175, 55, 0.24);
+  --border: rgba(212, 175, 55, 0.3);
   --danger: #ff3d63;
-  --shadow: none;
+  --shadow: 0 0 15px rgba(212, 175, 55, 0.2);
+  --font-display: "Marcellus", "Italiana", serif;
+  --font-body: "Josefin Sans", sans-serif;
+}
+
+:root[data-theme='light'] {
+  --bg: #fdfaf6;
+  --panel: #ffffff;
+  --panel-soft: #f4f0e6;
+  --fg: #1a1a1a;
+  --muted: #666666;
+  --gold: #b38b1f;
+  --gold-soft: rgba(179, 139, 31, 0.15);
+  --gold-strong: #8a680e;
+  --border: rgba(179, 139, 31, 0.35);
+  --danger: #d93829;
+  --shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
 
 * { box-sizing: border-box; }
@@ -17,8 +33,12 @@ html { scroll-behavior: smooth; }
 body {
   margin: 0;
   color: var(--fg);
-  font-family: "Josefin Sans", sans-serif;
-  background: #0b0b0b;
+  font-family: var(--font-body);
+  background: var(--bg);
+  background-image: repeating-linear-gradient(45deg, transparent, transparent 20px, var(--gold-soft) 20px, var(--gold-soft) 21px),
+                    repeating-linear-gradient(-45deg, transparent, transparent 20px, var(--gold-soft) 20px, var(--gold-soft) 21px);
+  background-attachment: fixed;
+  transition: background-color 0.4s ease, color 0.4s ease;
 }
 html, body, .social-app-shell {
   scrollbar-width: none;
@@ -118,6 +138,30 @@ button { cursor: pointer; }
 }
 .ghost-text-button { color: var(--muted); }
 .ghost-text-button:hover { color: var(--gold); }
+.theme-toggle-button {
+  display: inline-flex;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--gold);
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  transition: color 300ms ease, border-color 300ms ease, box-shadow 300ms ease, background-color 300ms ease;
+}
+.theme-toggle-button:hover,
+.theme-toggle-button:focus-visible {
+  color: var(--gold-strong);
+  background: rgba(212, 175, 55, 0.08);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+  outline: none;
+}
+.theme-toggle-button svg {
+  width: 18px;
+  height: 18px;
+}
 .user-menu {
   position: relative;
   display: inline-flex;
