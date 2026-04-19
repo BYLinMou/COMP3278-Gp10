@@ -1,7 +1,28 @@
+function isLoopbackHost(hostname) {
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1" ||
+    hostname === "[::1]"
+  );
+}
+
 function getApiBase() {
-  const configuredBase = import.meta.env.VITE_API_BASE_URL;
+  const configuredBase = import.meta.env.VITE_API_BASE_URL?.trim();
   if (configuredBase) {
-    return configuredBase;
+    if (typeof window !== "undefined") {
+      try {
+        const apiUrl = new URL(configuredBase, window.location.origin);
+        if (isLoopbackHost(apiUrl.hostname) && !isLoopbackHost(window.location.hostname)) {
+          return `${window.location.protocol}//${window.location.hostname}:8000`;
+        }
+        return apiUrl.toString().replace(/\/$/, "");
+      } catch {
+        return configuredBase.replace(/\/$/, "");
+      }
+    }
+
+    return configuredBase.replace(/\/$/, "");
   }
 
   if (typeof window !== "undefined") {
