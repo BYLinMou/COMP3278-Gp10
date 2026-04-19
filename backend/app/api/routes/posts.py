@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
@@ -38,6 +38,7 @@ def get_post(post_id: int, db: Session = Depends(get_db)):
 
 @router.post("/posts/upload", status_code=201)
 async def create_uploaded_post(
+    request: Request,
     user_id: int = Form(...),
     category: str = Form(...),
     description: str = Form(...),
@@ -55,7 +56,7 @@ async def create_uploaded_post(
             user_id=user_id,
             category=category,
             description=description,
-            image_url=f"http://127.0.0.1:8000/uploads/{filename}",
+            image_url=str(request.url_for("uploads", path=filename)),
             image_width=image_width,
             image_height=image_height,
         ),

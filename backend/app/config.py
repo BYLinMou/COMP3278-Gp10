@@ -1,6 +1,7 @@
 from functools import lru_cache
 
 from pydantic import Field
+from pydantic.field_validator import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -25,6 +26,13 @@ class Settings(BaseSettings):
     ai_base_url: str = "https://gudufree.yeelam.site/v1"
     ai_model: str = "Qwen3.5-397B-A17B-T"
     ai_timeout_seconds: float = 90
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, value):
+        if isinstance(value, str):
+            return [origin.strip() for origin in value.split(",") if origin.strip()]
+        return value
 
 
 @lru_cache
