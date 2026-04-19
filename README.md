@@ -1,5 +1,20 @@
 # HKUgram
 
+## Services
+
+- Frontend: `http://127.0.0.1:5173`
+- Backend API: `http://127.0.0.1:8000`
+- MySQL: `127.0.0.1:3307`
+- Database visualizer (Adminer): `http://127.0.0.1:8080`
+
+Adminer login values:
+
+- System: `MySQL`
+- Server: `db` when using Docker Compose network, or `host.docker.internal` if needed from another container setup
+- Username: `hkugram`
+- Password: `hkugram`
+- Database: `hkugram`
+
 Course project for COMP3278. The implementation is being delivered one core function at a time following the provided requirements.
 
 ## Current status

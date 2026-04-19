@@ -14,6 +14,17 @@ This service provides the first core function for the COMP3278 project: a MySQL-
 
 The backend container runs `python scripts/bootstrap.py` before starting Uvicorn. That bootstrap step waits for MySQL, creates tables, and seeds demo data once.
 
+## Database visualization
+
+The root `docker-compose.yml` also starts an Adminer service for inspecting the MySQL schema and data.
+
+- URL: `http://127.0.0.1:8080`
+- System: `MySQL`
+- Server: `db`
+- Username: `hkugram`
+- Password: `hkugram`
+- Database: `hkugram`
+
 ## AI agent configuration
 
 The Discover page AI agent is configured for a Llama 3.1 chat-completions-compatible API.
