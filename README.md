@@ -177,4 +177,6 @@ In practice, the recommended deployment path for this repo is:
 - `.github/workflows/deploy.yml`
   Deploys the Docker Compose stack to the remote server over SSH. Configure the required repository or environment secrets before use, including `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_PRIVATE_KEY`, and `DEPLOY_PROJECT_PATH`.
 
+Use [`.env.example`](C:\Users\User\Desktop\COMP3278\GroupProject\.env.example) as the template for the server-side `.env` file.
+
 The release workflow uses the repository `GITHUB_TOKEN`, so package publishing must be allowed for Actions in the repository settings.

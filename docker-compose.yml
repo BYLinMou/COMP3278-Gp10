@@ -38,8 +38,9 @@ services:
       DATABASE_URL: mysql+pymysql://hkugram:hkugram@db:3306/hkugram
       AI_API_KEY: ${AI_API_KEY:-}
       AI_BASE_URL: ${AI_BASE_URL:-https://gudufree.yeelam.site/v1}
-      AI_MODEL: ${AI_MODEL:-Qwen3.5-397B-A17B-T}
+      AI_MODEL: ${AI_MODEL:-llama3.1-8b}
       AI_TIMEOUT_SECONDS: ${AI_TIMEOUT_SECONDS:-90}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
     ports:
       - "8000:8000"
     depends_on:

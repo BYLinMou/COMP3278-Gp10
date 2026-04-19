@@ -33,7 +33,7 @@ Do not commit API keys into the repository. For Docker Compose, export the key a
 ```bash
 export AI_API_KEY="your-key-here"
 export AI_BASE_URL="https://gudufree.yeelam.site/v1"
-export AI_MODEL="Qwen3.5-397B-A17B-T"
+export AI_MODEL="llama3.1-8b"
 docker compose up --build
 ```
 
