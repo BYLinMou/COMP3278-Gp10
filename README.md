@@ -1,6 +1,12 @@
 # HKUgram
 
-## Services
+## Project Overview
+
+HKUgram is a COMP3278 course project built for Scenario 2, a social media application backed by a relational database. The system lets users register accounts, publish image posts, browse a feed, like and comment on posts, follow creators, review browsing history, and explore basic analytics such as popular posts and active users.
+
+The project is designed to satisfy the course requirements across database design, query capability, UI, and deployment. It uses `FastAPI` and `SQLAlchemy` on the backend, `MySQL` as the core relational database, and `React + Vite` on the frontend with an Art Deco visual direction. In addition to the social feed workflow, HKUgram includes a read-only SQL and Text-to-SQL query feature for demoing database access and visualization on top of the same dataset.
+
+## Services (development)
 
 - Frontend: `http://127.0.0.1:5173`
 - Backend API: `http://127.0.0.1:8000`
@@ -15,15 +21,6 @@ Adminer login values:
 - Password: `hkugram`
 - Database: `hkugram`
 
-Course project for COMP3278. The implementation is being delivered one core function at a time following the provided requirements.
-
-## Current status
-
-- Core function 1 complete: MySQL schema plus backend CRUD APIs
-- Core function 2 complete: read-only SQL query system and Text-to-SQL demo queries
-- Core function 3 complete: React frontend with Art Deco feed, posting flow, and query dashboard
-- Core function 4 in progress: integrated Docker deployment and demo readiness
-
 ## Run the full project
 
 1. From the repository root, run `docker compose up --build`.
@@ -35,9 +32,9 @@ Course project for COMP3278. The implementation is being delivered one core func
 
 This project publishes two separate container images instead of one combined image.
 
-- Backend image: `ghcr.io/<owner>/hkugram-backend:<version>`
+- Backend image: `ghcr.io/bylinmou/hkugram-backend:latest`
   Runs the FastAPI application and backend bootstrap logic.
-- Frontend image: `ghcr.io/<owner>/hkugram-frontend:<version>`
+- Frontend image: `ghcr.io/bylinmou/hkugram-frontend:latest`
   Serves the built Vite frontend with Nginx.
 
 The images are separated on purpose:
@@ -71,80 +68,48 @@ This mode is for development because:
 - backend is built locally from `backend/Dockerfile`
 - frontend runs the Vite dev server instead of the production frontend image
 
-### Option 2: Deploy with published GHCR images
+### Option 2: Deploy on server with docker-compose.prod.yml (production)
 
-After GitHub Actions publishes a release, you can deploy with the versioned images directly.
+Use this when deploying on a Linux server with prebuilt images. You do not need to clone the full repository on the server.
 
-Example image names:
+1. Install Docker Engine and Docker Compose plugin on the server.
+2. Create a deployment directory, for example `/opt/hkugram`.
+3. Copy these files into that directory:
 
-- `ghcr.io/<owner>/hkugram-backend:<version>`
-- `ghcr.io/<owner>/hkugram-frontend:<version>`
+- `docker-compose.prod.yml`
+- `.env.example`
 
-Example production-style compose file:
-
-```yaml
-services:
-  db:
-    image: mysql:8.4
-    restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: hkugram
-      MYSQL_USER: hkugram
-      MYSQL_PASSWORD: hkugram
-      MYSQL_ROOT_PASSWORD: root
-    volumes:
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-
-  backend:
-    image: ghcr.io/<owner>/hkugram-backend:<version>
-    restart: unless-stopped
-    environment:
-      APP_NAME: HKUgram API
-      DATABASE_URL: mysql+pymysql://hkugram:hkugram@db:3306/hkugram
-    ports:
-      - "8000:8000"
-    depends_on:
-      db:
-        condition: service_healthy
-
-  frontend:
-    image: ghcr.io/<owner>/hkugram-frontend:<version>
-    restart: unless-stopped
-    ports:
-      - "5173:80"
-    depends_on:
-      - backend
-
-volumes:
-  mysql_data:
-```
-
-Deployment steps:
-
-1. Make sure the release workflow has already published the backend and frontend images.
-2. Replace `<owner>` with the GitHub account or organization name.
-3. Replace `<version>` with the value in the release tag, for example `0.8.0-alpha.1`.
-4. Save the compose file and run:
+4. Create `.env` from the example file:
 
 ```bash
-docker compose up -d
+cd /opt/hkugram
+cp .env.example .env
 ```
 
-5. Open:
+5. Edit `.env` and fill in the real values you need. At minimum, check:
 
-- Frontend: `http://127.0.0.1:5173`
-- Backend API: `http://127.0.0.1:8000`
+- `AI_API_KEY`
+- `AI_BASE_URL`
+- `AI_MODEL`
+- `AI_TIMEOUT_SECONDS`
+- `CORS_ORIGINS`
 
-If the images are private on GHCR, log in first:
+6. Start the production stack:
 
 ```bash
-docker login ghcr.io
+cd /opt/hkugram
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d --remove-orphans
+docker compose -f docker-compose.prod.yml ps
 ```
+
+7. Open the deployed services:
+
+- Frontend: `http://<server-ip>/`
+- Backend API: `http://<server-ip>:8000`
+- Adminer: `http://<server-ip>:8070`
+
+For later updates, replace `docker-compose.prod.yml` if needed, update `.env` if needed, then run the same Docker Compose command block again.
 
 ### Option 3: Deploy individual containers manually
 
@@ -178,5 +143,3 @@ In practice, the recommended deployment path for this repo is:
   Deploys the Docker Compose stack to the remote server over SSH. Configure the required repository or environment secrets before use, including `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_PRIVATE_KEY`, and `DEPLOY_PROJECT_PATH`.
 
 Use [`.env.example`](C:\Users\User\Desktop\COMP3278\GroupProject\.env.example) as the template for the server-side `.env` file.
-
-The release workflow uses the repository `GITHUB_TOKEN`, so package publishing must be allowed for Actions in the repository settings.
