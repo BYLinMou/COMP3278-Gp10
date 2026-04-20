@@ -128,7 +128,7 @@ export default function App() {
         ) : null}
 
         {currentView === "analytics" ? (
-          <AnalyticsPage analytics={analytics} isLoading={isAnalyticsLoading} onOpenProfile={goUserPage} />
+          <AnalyticsPage analytics={analytics} isLoading={isAnalyticsLoading} onOpenPostById={openPostById} onOpenProfile={goUserPage} />
         ) : null}
 
         {currentView === "search" ? (
