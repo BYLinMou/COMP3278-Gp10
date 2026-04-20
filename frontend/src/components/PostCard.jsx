@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import Avatar from "./Avatar";
 import { formatCompactDate } from "../lib/format";
 import { icons } from "../lib/icons";
@@ -14,6 +14,18 @@ function getMediaShape(post) {
 const PostCard = memo(function PostCard({ post, currentUserId, onLike, onOpen, onProfile }) {
   const mediaShape = getMediaShape(post);
   const isLiked = Boolean(post.liked_by_viewer);
+  const [likeAnimationSeed, setLikeAnimationSeed] = useState(0);
+
+  async function handleLikeClick() {
+    const likeResult = await onLike(post.id, currentUserId, {
+      currentLiked: isLiked,
+      currentLikeCount: post.like_count,
+      postOwnerUsername: post.username,
+    });
+    if (likeResult?.liked) {
+      setLikeAnimationSeed((current) => current + 1);
+    }
+  }
 
   return (
     <article className={`post-tile post-tile--${mediaShape}`}>
@@ -51,15 +63,16 @@ const PostCard = memo(function PostCard({ post, currentUserId, onLike, onOpen, o
             aria-label={isLiked ? "Unlike post" : "Like post"}
             aria-pressed={isLiked}
             className={`icon-action ${isLiked ? "icon-action--active" : ""}`}
-            onClick={() => onLike(post.id, currentUserId, {
-              currentLiked: isLiked,
-              currentLikeCount: post.like_count,
-              postOwnerUsername: post.username,
-            })}
+            onClick={handleLikeClick}
             disabled={!currentUserId}
             type="button"
           >
-            {isLiked ? icons.heartFilled : icons.heart}
+            <span
+              className={`icon-action__icon-shell ${isLiked && likeAnimationSeed ? "icon-action__icon-shell--pulse" : ""}`}
+              key={`${isLiked ? "liked" : "idle"}-${likeAnimationSeed}`}
+            >
+              {isLiked ? icons.heartFilled : icons.heart}
+            </span>
             <span>{post.like_count}</span>
           </button>
           <button className="icon-action" onClick={() => onOpen(post)} type="button">{icons.comment}<span>{post.comment_count}</span></button>
