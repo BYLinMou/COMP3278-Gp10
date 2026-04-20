@@ -863,7 +863,7 @@ button { cursor: pointer; }
   display: flex;
   justify-content: flex-end;
   background: var(--backdrop);
-  z-index: 20;
+  z-index: 1000;
 }
 .thread-drawer {
   width: min(100%, 560px);
