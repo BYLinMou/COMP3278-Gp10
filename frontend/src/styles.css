@@ -113,7 +113,7 @@ button { cursor: pointer; }
   z-index: 1;
 }
 .brand-block { display: grid; gap: 0.08rem; }
-.brand-block h1, .discovery-header h2, .card-header h2, .profile-hero__meta h2 {
+.brand-block h1, .discovery-header h2, .card-header h2, .profile-hero__meta h2, .home-hero__heading h2 {
   margin: 0;
   font-family: "Marcellus", serif;
   letter-spacing: 0.16em;
@@ -385,6 +385,7 @@ button { cursor: pointer; }
   gap: 1rem;
   align-items: start;
 }
+.page-grid--home { grid-template-columns: minmax(0, 1fr); }
 .page-main, .page-side, .analytics-grid, .center-panel, .profile-page {
   display: grid;
   gap: 1rem;
@@ -392,7 +393,7 @@ button { cursor: pointer; }
 }
 .center-panel { max-width: 920px; margin: 0 auto; }
 
-.discovery-header, .sidebar-card, .profile-hero {
+.discovery-header, .sidebar-card, .profile-hero, .home-hero {
   background: var(--panel);
   border: 1px solid var(--border);
 }
@@ -402,6 +403,92 @@ button { cursor: pointer; }
 }
 .discovery-header, .sidebar-card { padding: 1rem 1.1rem; }
 .sidebar-card--wide { min-width: 0; }
+.home-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(16.5rem, 0.95fr);
+  gap: 1rem 1.1rem;
+  padding: 1rem 1.1rem 1.1rem;
+  align-items: start;
+}
+.home-hero__intro, .home-hero__creators {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+  align-content: start;
+}
+.home-hero__heading {
+  display: grid;
+  gap: 0.55rem;
+}
+.home-hero__heading h2 {
+  font-size: clamp(2rem, 4.5vw, 3rem);
+  line-height: 1;
+}
+.home-hero__heading .muted-copy {
+  max-width: 42rem;
+  font-size: clamp(1rem, 1.8vw, 1.08rem);
+}
+.home-hero__creators {
+  padding-left: 1.1rem;
+  border-left: 1px solid var(--border-soft);
+}
+.home-hero__creators .card-header {
+  margin-bottom: 0;
+}
+.home-hero__creators .card-header h2 {
+  font-size: 1.02rem;
+}
+.home-hero__creators .eyebrow {
+  font-size: 0.72rem;
+}
+.home-hero__creators .creator-randomizer-button {
+  width: 36px;
+  height: 36px;
+}
+.home-hero__creators .creator-randomizer-button svg {
+  width: 16px;
+  height: 16px;
+}
+.home-hero__creators .sidebar-list {
+  gap: 0.55rem;
+}
+.home-hero__creators .sidebar-user {
+  gap: 0.55rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 14px;
+}
+.home-hero__creators .sidebar-user > div {
+  display: grid;
+  gap: 0.08rem;
+}
+.home-hero__creators .sidebar-user strong {
+  font-size: 0.98rem;
+}
+.home-hero__creators .sidebar-user span,
+.home-hero__creators .sidebar-user em {
+  font-size: 0.84rem;
+}
+.home-hero__creators .avatar-badge--xs {
+  width: 30px;
+  height: 30px;
+  font-size: 0.78rem;
+}
+.home-hero__filters {
+  grid-column: 1 / -1;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border-soft);
+}
+.home-hero .feed-toolbar {
+  gap: 0.5rem;
+}
+.home-hero .sort-pill,
+.home-hero .category-tab {
+  min-height: 38px;
+  padding: 0.55rem 0.9rem;
+}
+.home-hero__filters .category-tabs {
+  gap: 0.55rem;
+}
 .card-header { margin-bottom: 0.95rem; }
 .card-header--with-action {
   display: flex;
@@ -1114,6 +1201,13 @@ input:focus, textarea:focus, select:focus { border-bottom-color: var(--gold-stro
   .search-lab__hero, .search-lab__form { grid-template-columns: 1fr; }
   .search-lab__heading { justify-content: space-between; }
   .top-nav { justify-content: flex-start; }
+  .home-hero { grid-template-columns: 1fr; }
+  .home-hero__creators {
+    padding-left: 0;
+    padding-top: 0.9rem;
+    border-left: 0;
+    border-top: 1px solid var(--border-soft);
+  }
   .profile-post-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .profile-hero__stats, .stat-board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .profile-route-banner { grid-template-columns: 1fr; }
@@ -1122,6 +1216,13 @@ input:focus, textarea:focus, select:focus { border-bottom-color: var(--gold-stro
 
 @media (max-width: 640px) {
   .social-app-shell { padding: 0.7rem; }
+  .home-hero {
+    gap: 0.85rem;
+    padding: 0.85rem;
+  }
+  .home-hero__heading h2 {
+    font-size: clamp(1.65rem, 9vw, 2.2rem);
+  }
   .feed-waterfall {
     grid-template-columns: 1fr;
     gap: 0.8rem;
