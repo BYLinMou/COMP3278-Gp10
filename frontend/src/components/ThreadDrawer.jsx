@@ -57,41 +57,47 @@ const ThreadDrawer = memo(function ThreadDrawer({ currentUser, post, comments, o
     return likeResult;
   }, [currentUser?.id, isLiked, onLike, post, triggerLikeAnimation, triggerLikeBurst]);
 
-  const handleLikeButtonClick = useCallback(async () => {
-    await requestLike();
-  }, [requestLike]);
+  const handleImageLike = useCallback(async (intent) => {
+    if (!currentUser || !post) return;
+    await requestLike({
+      intent,
+      celebrate: intent === "like",
+    });
+  }, [currentUser, post, requestLike]);
 
-  const handleImageLike = useCallback(async () => {
-    if (!currentUser || !post || isLiked) return;
-    await requestLike({ intent: "like", celebrate: true });
-  }, [currentUser, isLiked, post, requestLike]);
+  const handleLikeButtonClick = useCallback(async () => {
+    await handleImageLike(isLiked ? "unlike" : "like");
+  }, [handleImageLike, isLiked]);
+
+  const handleImageDoubleClick = useCallback(async () => {
+    await handleImageLike(isLiked ? "unlike" : "like");
+  }, [handleImageLike, isLiked]);
 
   const handleImagePointerUp = useCallback(async (event) => {
     if (!currentUser) return;
-    if (event.pointerType === "mouse" && event.button !== 0) return;
+    if (event.pointerType === "mouse") return;
 
     const now = Date.now();
     if (now - lastImageTapAtRef.current <= 280) {
       lastImageTapAtRef.current = 0;
-      await handleImageLike();
+      await handleImageLike(isLiked ? "unlike" : "like");
       return;
     }
 
     lastImageTapAtRef.current = now;
-  }, [currentUser, handleImageLike]);
+  }, [currentUser, handleImageLike, isLiked]);
 
   const handleImageKeyDown = useCallback(async (event) => {
     if (event.key !== "Enter" && event.key !== " ") return;
     event.preventDefault();
-    await handleImageLike();
-  }, [handleImageLike]);
+    await handleImageLike(isLiked ? "unlike" : "like");
+  }, [handleImageLike, isLiked]);
 
   if (!post) return null;
 
   const threadImageContent = (
     <>
       <img src={post.image_url} alt={post.description} />
-      {currentUser && !isLiked ? <span className="thread-image-hint">Double-click photo to like</span> : null}
       {isLikeBurstVisible ? (
         <div className="thread-like-burst" key={likeBurstSeed} aria-hidden="true">
           <span className="thread-like-burst__diamond" />
@@ -125,8 +131,9 @@ const ThreadDrawer = memo(function ThreadDrawer({ currentUser, post, comments, o
         </button>
         {currentUser ? (
           <button
-            aria-label={isLiked ? "Post image already liked" : "Double-click or press Enter to like this post"}
+            aria-label={isLiked ? "Double-click or press Enter to unlike this post" : "Double-click or press Enter to like this post"}
             className={`thread-image-wrap thread-image-wrap--interactive ${isLiked ? "thread-image-wrap--liked" : ""}`}
+            onDoubleClick={handleImageDoubleClick}
             onKeyDown={handleImageKeyDown}
             onPointerUp={handleImagePointerUp}
             type="button"
@@ -140,27 +147,30 @@ const ThreadDrawer = memo(function ThreadDrawer({ currentUser, post, comments, o
         )}
         <div className="thread-post-meta">
           <span className="post-chip">{post.category}</span>
-          <div className="thread-post-stats"><span>{post.like_count} likes</span><span>{post.comment_count} comments</span></div>
+          <div className="thread-post-stats">
+            {currentUser ? (
+              <button
+                aria-label={isLiked ? "Unlike post" : "Like post"}
+                aria-pressed={isLiked}
+                className={`icon-action thread-like-toggle ${isLiked ? "icon-action--active" : ""}`}
+                onClick={handleLikeButtonClick}
+                type="button"
+              >
+                <span
+                  className={`icon-action__icon-shell ${isLiked && likeAnimationSeed ? "icon-action__icon-shell--pulse" : ""}`}
+                  key={`${isLiked ? "liked" : "idle"}-${likeAnimationSeed}`}
+                >
+                  {isLiked ? icons.heartFilled : icons.heart}
+                </span>
+                <span>{post.like_count}</span>
+              </button>
+            ) : (
+              <span>{post.like_count} likes</span>
+            )}
+            <span>{post.comment_count} comments</span>
+          </div>
         </div>
-        <div className="thread-post-actions">
-          <button
-            aria-label={isLiked ? "Unlike post" : "Like post"}
-            aria-pressed={isLiked}
-            className={`icon-action thread-like-button ${isLiked ? "icon-action--active" : ""}`}
-            disabled={!currentUser}
-            onClick={handleLikeButtonClick}
-            type="button"
-          >
-            <span
-              className={`icon-action__icon-shell ${isLiked && likeAnimationSeed ? "icon-action__icon-shell--pulse" : ""}`}
-              key={`${isLiked ? "liked" : "idle"}-${likeAnimationSeed}`}
-            >
-              {isLiked ? icons.heartFilled : icons.heart}
-            </span>
-            <span>{isLiked ? "Liked" : "Like"}</span>
-          </button>
-          {!currentUser ? <span className="thread-post-hint">Log in to like posts.</span> : null}
-        </div>
+        {!currentUser ? <p className="thread-post-hint">Log in to like posts.</p> : null}
         <p className="thread-body">{post.description}</p>
         <form
           className="stack-form thread-form"

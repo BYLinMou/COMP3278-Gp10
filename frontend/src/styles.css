@@ -1058,7 +1058,7 @@ button { cursor: pointer; }
   user-select: none;
 }
 .thread-image-wrap--interactive {
-  cursor: zoom-in;
+  cursor: pointer;
   transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
 }
 .thread-image-wrap--interactive:hover,
@@ -1075,26 +1075,12 @@ button { cursor: pointer; }
   transform: scale(1.02);
 }
 .thread-image-wrap--liked {
-  cursor: default;
+  cursor: pointer;
 }
 .thread-image-wrap img {
   width: 100%;
   display: block;
   object-fit: cover;
-}
-.thread-image-hint {
-  position: absolute;
-  left: 50%;
-  bottom: 1rem;
-  transform: translateX(-50%);
-  padding: 0.45rem 0.8rem;
-  border: 1px solid var(--border);
-  background: rgba(10, 10, 10, 0.82);
-  color: var(--gold-strong);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-size: 0.72rem;
-  white-space: nowrap;
 }
 .thread-like-burst {
   position: absolute;
@@ -1155,26 +1141,24 @@ button { cursor: pointer; }
   flex-wrap: wrap;
   align-items: center;
 }
-.thread-post-actions {
-  display: flex;
-  gap: 0.8rem;
-  align-items: center;
-  flex-wrap: wrap;
+.thread-like-toggle {
+  gap: 0.4rem;
+  color: var(--muted);
+  transition: color 180ms ease, transform 180ms ease;
 }
-.thread-like-button {
-  min-height: 44px;
-  padding: 0.65rem 0.85rem;
-  border: 1px solid var(--border);
-  background: var(--surface-muted);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+.thread-like-toggle:hover,
+.thread-like-toggle:focus-visible {
+  color: var(--gold-strong);
+  outline: none;
 }
-.thread-like-button:not(:disabled):hover,
-.thread-like-button.icon-action--active {
-  border-color: var(--gold);
-  box-shadow: var(--shadow);
+.thread-like-toggle.icon-action--active {
+  color: var(--gold-strong);
+}
+.thread-like-toggle:not(:disabled):active {
+  transform: scale(0.96);
 }
 .thread-post-hint {
+  margin: 0;
   color: var(--muted);
   font-size: 0.92rem;
 }
