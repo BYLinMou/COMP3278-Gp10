@@ -6,8 +6,6 @@ tech stack: no specific tech stack but user more familiar with python as backend
 
 Track the .gitignore file and add all tmp files into it.
 
-You should implement the code and function first, before move on to powerpoint and diagrams(you r allowed to present it in a .md with mermaid, or if u hv ability u can use memaid to draw graphs). no video needed at this point.
-
 ---
 
 UI prompt:
