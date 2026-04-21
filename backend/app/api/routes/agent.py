@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from httpx import HTTPError, HTTPStatusError, TimeoutException
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app import schemas
@@ -55,3 +56,5 @@ async def execute_approved_query(payload: schemas.AgentExecuteRequest, db: Sessi
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=400, detail="Database error occurred when executing the query. The SQL syntax generated might be invalid or unsupported by your database provider.") from exc

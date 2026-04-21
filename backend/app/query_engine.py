@@ -58,7 +58,7 @@ SEARCH_SQL = """
         MATCH(p.description, p.category) AGAINST (:search_text IN NATURAL LANGUAGE MODE)
         OR MATCH(u.username, u.display_name, u.bio) AGAINST (:search_text IN NATURAL LANGUAGE MODE)
         OR MATCH(c.body) AGAINST (:search_text IN NATURAL LANGUAGE MODE)
-    GROUP BY p.id, u.id
+    GROUP BY p.id, u.id, u.username, u.display_name, p.category, p.description, p.image_url, p.created_at
     ORDER BY relevance_score DESC, p.created_at DESC
     LIMIT 10
 """
@@ -91,7 +91,7 @@ LIKE_SEARCH_SQL = """
         OR LOWER(u.username) LIKE :like_term
         OR LOWER(u.display_name) LIKE :like_term
         OR LOWER(c.body) LIKE :like_term
-    GROUP BY p.id, u.id
+    GROUP BY p.id, u.id, u.username, u.display_name, p.category, p.description, p.image_url, p.created_at
     ORDER BY relevance_score DESC, p.created_at DESC
     LIMIT 10
 """
@@ -162,7 +162,7 @@ def text_to_sql(prompt: str) -> GeneratedQuery:
                 FROM posts p
                 JOIN users u ON u.id = p.user_id
                 LEFT JOIN likes l ON l.post_id = p.id
-                GROUP BY p.id, u.username
+                GROUP BY p.id, u.username, p.description, p.image_url, p.created_at
                 ORDER BY like_count DESC, p.created_at DESC
                 LIMIT 10
             """,
@@ -237,7 +237,7 @@ def text_to_sql(prompt: str) -> GeneratedQuery:
                     OR LOWER(u.username) LIKE :like_term
                     OR LOWER(u.display_name) LIKE :like_term
                     OR LOWER(c.body) LIKE :like_term
-                GROUP BY p.id, u.id
+                GROUP BY p.id, u.id, u.username, u.display_name, p.category, p.description, p.image_url, p.created_at
                 ORDER BY {order_clause}
                 LIMIT 10
             """,

@@ -78,7 +78,7 @@ Rules:
 - Query only the HKUgram app tables listed below.
 - Prefer post-centered answers when the user asks about content, discovery, ranking, popularity, comments, likes, authors, or categories.
 - For post-centered answers, include p.id AS post_id, p.description, p.image_url, p.category, u.username, u.display_name, like_count, and comment_count.
-- Use joins and aggregation where helpful.
+- Use joins and aggregation where helpful. Be sure to include all non-aggregated selected columns in the GROUP BY clause to comply with ANY ONLY_FULL_GROUP_BY settings.
 - Sort results meaningfully, for example by like_count, comment_count, relevance, or p.created_at.
 - Always LIMIT results to 10 or fewer.
 
