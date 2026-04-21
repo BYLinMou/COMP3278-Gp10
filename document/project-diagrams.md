@@ -1,33 +1,40 @@
 # HKUgram Project Diagrams
 
 This file captures the diagrams that support the COMP3278 final presentation.
-The diagrams are derived from the current implementation in `backend/app` and `frontend/src`.
+The diagrams below are aligned with the current implementation in `backend/app` and `frontend/src`.
 
 ## 1. System Architecture
 
 ```mermaid
 flowchart LR
-    User[Browser User] --> FE[React + Vite Frontend]
+    User[Browser User] --> FE[React plus Vite Frontend]
     FE -->|REST API| BE[FastAPI Backend]
     BE -->|SQLAlchemy ORM| DB[(MySQL 8.4)]
     BE --> UP[Local Upload Storage]
-    BE --> QE[Read-only SQL + Text-to-SQL Engine]
+    BE --> QE[Read-only Query Engine]
+    BE --> AE[AI Discovery Agent Engine]
+    AE --> LLM[External AI Provider]
 
     subgraph Frontend
       FE --> P1[Home Feed]
       FE --> P2[Create Post]
-      FE --> P3[Profile + Follow]
+      FE --> P3[Profile and Follow]
       FE --> P4[History]
       FE --> P5[Analytics]
-      FE --> P6[Settings + Auth]
+      FE --> P6[Search Comparison]
+      FE --> P7[Settings and Auth]
+      FE --> P8[Notification Menu]
+      FE --> P9[Discovery Agent Panel]
     end
 
     subgraph Backend
-      BE --> R1[/posts routes/]
+      BE --> R1[/auth routes/]
       BE --> R2[/users routes/]
-      BE --> R3[/auth routes/]
-      BE --> R4[/analytics routes/]
-      BE --> R5[/query routes/]
+      BE --> R3[/posts routes/]
+      BE --> R4[/notifications routes/]
+      BE --> R5[/analytics routes/]
+      BE --> R6[/query routes/]
+      BE --> R7[/agent routes/]
     end
 ```
 
@@ -84,18 +91,32 @@ erDiagram
         datetime created_at
     }
 
+    NOTIFICATIONS {
+        int id PK
+        int user_id FK
+        int actor_id FK
+        int post_id FK
+        string type
+        bool is_read
+        datetime created_at
+    }
+
     USERS ||--o{ POSTS : creates
     USERS ||--o{ LIKES : performs
     USERS ||--o{ COMMENTS : writes
     USERS ||--o{ VIEW_HISTORY : records
+    USERS ||--o{ FOLLOWS : follower
+    USERS ||--o{ FOLLOWS : followee
+    USERS ||--o{ NOTIFICATIONS : receives
+    USERS ||--o{ NOTIFICATIONS : triggers
+
     POSTS ||--o{ LIKES : receives
     POSTS ||--o{ COMMENTS : contains
     POSTS ||--o{ VIEW_HISTORY : appears_in
-    USERS ||--o{ FOLLOWS : follower
-    USERS ||--o{ FOLLOWS : followee
+    POSTS ||--o{ NOTIFICATIONS : references
 ```
 
-## 3. Main Data Flow
+## 3. Main Social Data Flow
 
 ```mermaid
 sequenceDiagram
@@ -104,36 +125,58 @@ sequenceDiagram
     participant B as FastAPI
     participant D as MySQL
 
-    U->>F: Open Home / Create / Profile / Analytics
-    F->>B: GET /feed, /users/{username}, /analytics/overview
-    B->>D: Read relational data
+    U->>F: Open Home, Search, Analytics, or Profile
+    F->>B: GET /feed, /query/popular-keywords, /analytics/overview, /users/{username}
+    B->>D: Read posts, profiles, rankings, and search metadata
     D-->>B: Rows
     B-->>F: JSON response
-    F-->>U: Art Deco dashboard/feed UI
+    F-->>U: Feed, ranking, profile, and search UI
 
-    U->>F: Like, comment, follow, or create post
-    F->>B: POST request with current user context
-    B->>D: Insert/update relational rows
+    U->>F: Like, comment, follow, create post, or mark notifications read
+    F->>B: POST or PUT request
+    B->>D: Insert or update relational rows
+    B->>D: Create notification rows when applicable
     D-->>B: Commit success
-    B-->>F: Updated counts / objects
+    B-->>F: Updated counts, objects, or 204 response
     F-->>U: Immediate UI refresh
 ```
 
-## 4. Query Feature Flow
+## 4. Query And Agent Flow
 
 ```mermaid
 flowchart TD
-    Prompt[User prompt or SQL text] --> API[/query/text-to-sql or /query/sql]
-    API --> Guard[Read-only validation]
-    Guard --> Mapper[Prompt-to-SQL mapping]
-    Mapper --> Exec[Execute SELECT only]
-    Exec --> Result[Columns + rows + row_count]
-    Result --> UI[Analytics / query demo view]
+    Prompt[User question or SQL text] --> Choice{Mode}
+
+    Choice --> SQLAPI[/query/sql/]
+    Choice --> T2S[/query/text-to-sql/]
+    Choice --> CMP[/query/search-comparison/]
+    Choice --> DRAFT[/agent/draft/]
+
+    SQLAPI --> Guard1[Read-only validation]
+    T2S --> Mapper[Deterministic prompt-to-SQL mapping]
+    Mapper --> Guard1
+
+    CMP --> SearchFlow[Full-text search plus text-to-SQL comparison]
+    SearchFlow --> SearchUI[Search page result UI]
+
+    Guard1 --> Exec1[Execute SELECT only]
+    Exec1 --> Result1[Columns plus rows plus row_count]
+    Result1 --> QueryUI[Search page or query demo UI]
+
+    DRAFT --> AI1[External AI completion API]
+    AI1 --> DraftSQL[Draft SQL plus explanation]
+    DraftSQL --> Approval[User reviews and approves]
+    Approval --> EXECUTE[/agent/execute/]
+    EXECUTE --> Guard2[Read-only validation]
+    Guard2 --> Exec2[Execute SELECT only]
+    Exec2 --> Curate[AI curation or fallback ranking]
+    Curate --> AgentUI[DiscoveryAgent UI]
 ```
 
-## Notes for Presentation
+## Notes For Presentation
 
-- The required relational design is covered by `users`, `posts`, `likes`, `comments`, `view_history`, and `follows`.
-- The SQL system requirement is covered by the read-only `/query/sql` endpoint and the mapped `/query/text-to-sql` endpoint.
-- The UI requirement is covered by the React frontend pages for feed, profile, history, analytics, and posting.
-- The deployment requirement is covered by Docker Compose with separate frontend, backend, and MySQL services.
+- The required relational design is covered by `users`, `posts`, `likes`, `comments`, `view_history`, `follows`, and `notifications`.
+- The SQL system requirement is covered by the read-only `/query/sql` endpoint, deterministic `/query/text-to-sql`, and the approval-based `/agent` workflow.
+- The UI scope now includes feed, posting, profile/follow, history, analytics, search, notifications, and the AI discovery panel.
+- Upload storage remains local to the backend and is exposed through `/uploads`.
+- Deployment is still handled separately by Docker Compose with frontend, backend, MySQL, and Adminer services.
