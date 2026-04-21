@@ -68,7 +68,7 @@ async def create_uploaded_post(
             user_id=user_id,
             category=category,
             description=description,
-            image_url=str(request.url_for("uploads", path=filename)),
+            image_url=str(request.url_for("uploads", path=filename)).replace("http://", "https://") if "localhost" not in str(request.url.netloc) and "127.0.0.1" not in str(request.url.netloc) else str(request.url_for("uploads", path=filename)),
             image_width=image_width,
             image_height=image_height,
         ),

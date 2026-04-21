@@ -86,7 +86,12 @@ def _attach_recent_comments(db: Session, posts: list[schemas.PostRead]) -> None:
 
 
 def create_post(db: Session, payload: schemas.PostCreate) -> models.Post:
-    post = models.Post(**payload.model_dump(mode="json"))
+    post_data = payload.model_dump(mode="json")
+    if post_data.get("image_url") and post_data["image_url"].startswith("http://"):
+        if "localhost" not in post_data["image_url"] and "127.0.0.1" not in post_data["image_url"]:
+            post_data["image_url"] = post_data["image_url"].replace("http://", "https://")
+        
+    post = models.Post(**post_data)
     db.add(post)
     db.commit()
     db.refresh(post)
