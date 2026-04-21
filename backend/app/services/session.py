@@ -11,12 +11,12 @@ def set_session_cookie(response: Response, username: str) -> None:
         key=settings.session_cookie_name,
         value=sign_session_value(username, settings.session_secret),
         httponly=True,
-        samesite="lax",
-        secure=False,
+        samesite="none",
+        secure=True,
         max_age=settings.session_max_age_seconds,
     )
 
 
 def clear_session_cookie(response: Response) -> None:
-    response.delete_cookie(key=settings.session_cookie_name, httponly=True, samesite="lax")
+    response.delete_cookie(key=settings.session_cookie_name, httponly=True, samesite="none", secure=True)
 
