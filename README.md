@@ -2,9 +2,12 @@
 
 ## Project Overview
 
-HKUgram is a COMP3278 course project built for Scenario 2, a social media application backed by a relational database. The system lets users register accounts, publish image posts, browse a feed, like and comment on posts, follow creators, review browsing history, and explore basic analytics such as popular posts and active users.
+HKUgram is built for COMP3278 course project Scenario 2, it is a social media application backed by a relational database. The system lets users register accounts, publish image posts, browse a feed, like and comment on posts, follow creators, review browsing history, and explore basic analytics such as popular posts and active users.
 
 The project is designed to satisfy the course requirements across database design, query capability, UI, and deployment. It uses `FastAPI` and `SQLAlchemy` on the backend, `MySQL` as the core relational database, and `React + Vite` on the frontend with an Art Deco visual direction. In addition to the social feed workflow, HKUgram includes a read-only SQL and Text-to-SQL query feature for demoing database access and visualization on top of the same dataset.
+
+### 🎞️ Video Demo
+https://github.com/user-attachments/assets/e464dae1-ce23-4e67-b0cf-07a4a33d725b
 
 ## Services (development)
 
