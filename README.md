@@ -117,6 +117,8 @@ docker compose -f docker-compose.prod.yml ps
 
 The production stack uses prebuilt container images. To use `FRONTEND_API_BASE_URL`, deploy a frontend image version that already includes the runtime config support introduced in this repository.
 
+The development `docker-compose.yml` also reads `FRONTEND_API_BASE_URL` from the root `.env` and passes it to Vite as `VITE_API_BASE_URL`.
+
 For later updates, replace `docker-compose.prod.yml` if needed, update `.env` if needed, then run the same Docker Compose command block again.
 
 ### Option 3: Deploy individual containers manually
