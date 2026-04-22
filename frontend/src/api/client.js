@@ -7,8 +7,16 @@ function isLoopbackHost(hostname) {
   );
 }
 
+function getRuntimeConfiguredBase() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return window.__HKUGRAM_CONFIG__?.apiBaseUrl?.trim?.() ?? "";
+}
+
 function getApiBase() {
-  const configuredBase = import.meta.env.VITE_API_BASE_URL?.trim();
+  const configuredBase = getRuntimeConfiguredBase() || import.meta.env.VITE_API_BASE_URL?.trim();
   if (configuredBase) {
     if (typeof window !== "undefined") {
       try {

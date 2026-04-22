@@ -55,6 +55,8 @@ services:
     image: ghcr.xiaoji.de/bylinmou/hkugram-frontend:latest
     container_name: hkugram-frontend
     restart: unless-stopped
+    environment:
+      FRONTEND_API_BASE_URL: ${FRONTEND_API_BASE_URL:-}
     ports:
       - "80:80"
     depends_on:

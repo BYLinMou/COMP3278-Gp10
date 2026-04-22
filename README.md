@@ -95,6 +95,7 @@ cp .env.example .env
 - `AI_BASE_URL`
 - `AI_MODEL`
 - `AI_TIMEOUT_SECONDS`
+- `FRONTEND_API_BASE_URL`
 - `CORS_ORIGINS`
 
 6. Start the production stack:
@@ -111,6 +112,10 @@ docker compose -f docker-compose.prod.yml ps
 - Frontend: `http://<server-ip>/`
 - Backend API: `http://<server-ip>:8000`
 - Adminer: `http://<server-ip>:8070`
+
+`FRONTEND_API_BASE_URL` accepts a full origin such as `http://<server-ip>:8000` or `https://api.example.com`. Leave it empty only if the frontend should infer the API host from the current page hostname and default to port `8000`.
+
+The production stack uses prebuilt container images. To use `FRONTEND_API_BASE_URL`, deploy a frontend image version that already includes the runtime config support introduced in this repository.
 
 For later updates, replace `docker-compose.prod.yml` if needed, update `.env` if needed, then run the same Docker Compose command block again.
 
